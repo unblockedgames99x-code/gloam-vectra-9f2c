@@ -1,182 +1,85 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#07090d" />
-    <title>NEO OS</title>
-    <style>
-      :root { color-scheme: dark; }
-      * { box-sizing: border-box; }
-      html, body { width: 100%; min-height: 100%; margin: 0; background: #07090d; }
-      body { overflow: hidden; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-      #neo { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; background: #07090d; }
-      .runner-controls {
-        position: fixed;
-        z-index: 10;
-        top: max(14px, env(safe-area-inset-top));
-        left: 50%;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        width: max-content;
-        max-width: calc(100vw - 28px);
-        padding: 8px;
-        border: 1px solid rgba(255, 255, 255, .18);
-        border-radius: 15px;
-        background: rgba(13, 17, 25, .76);
-        box-shadow: 0 16px 44px rgba(0, 0, 0, .35);
-        backdrop-filter: blur(18px);
-        transform: translateX(-50%);
-      }
-      button {
-        min-height: 36px;
-        border: 0;
-        border-radius: 10px;
-        padding: 0 13px;
-        color: #ffffff;
-        background: linear-gradient(135deg, #546dff, #8b48e8);
-        font: 700 13px/1 inherit;
-        cursor: pointer;
-      }
-      button:hover { filter: brightness(1.12); }
-      button:focus-visible { outline: 3px solid #ffffff; outline-offset: 2px; }
-      button:disabled { cursor: wait; opacity: .58; }
-      #fullscreen { background: rgba(255, 255, 255, .12); }
-      #status { max-width: 130px; overflow: hidden; color: rgba(255, 255, 255, .72); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
-      :fullscreen .runner-controls, :-webkit-full-screen .runner-controls { opacity: 0; pointer-events: none; }
-      @media (max-width: 560px) {
-        .runner-controls { gap: 6px; padding: 6px; }
-        button { min-height: 34px; padding: 0 9px; font-size: 12px; }
-        #status { display: none; }
-      }
-    </style>
-  </head>
-  <body>
-    <iframe id="neo" title="NEO OS" allow="autoplay; clipboard-read; clipboard-write; fullscreen; gamepad" allowfullscreen></iframe>
-    <div class="runner-controls" aria-label="NEO OS controls">
-      <button id="about-blank" type="button" disabled>Open in about:blank</button>
-      <button id="fullscreen" type="button" disabled>Full screen</button>
-      <span id="status" role="status">Starting NEO…</span>
-    </div>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Unblocked Games</title>
+<style>
+html,body{height:100%;margin:0;background:#05070b;color:#fff;font-family:system-ui}body{display:grid;place-items:center}#choose{text-align:center}button{margin:6px;padding:13px 18px;border:0;border-radius:10px;background:#5b5cf0;color:#fff;font-weight:700;cursor:pointer}button+button{background:#252830}button:disabled{opacity:.45;cursor:wait}p{font-size:13px;color:#9ba3b4}iframe{position:fixed;inset:0;width:100%;height:100%;border:0;background:#000}
+</style>
+</head>
+<body>
+<div id="choose">
+<button id="blank" disabled>Open in about:blank</button>
+<button id="full" disabled>Full screen</button>
+<p id="status">Loading the full site…</p>
+</div>
+<script>
+const u = "unblockedgames99x-code"
+const r = "gloam-vectra-9f2c"
+const b = "c169c02e6bf7beaff8235109c93cc8ebaced822d"
+const p = "unblocked-games.html"
+const f = ""
 
-    <script>
-      // Public jsDelivr sources. The first available source is used.
-      const u = "unblockedgames99x-code";
-      const r = "gloam-vectra-9f2c";
-      const b = "1705efd";
-      const p = "neo-os/index.html";
-      const f = "";
+const urls = [
+`https://cdn.jsdelivr.net/gh/${u}/${r}@${b}/${p}${f}`,
+`https://fastly.jsdelivr.net/gh/${u}/${r}@${b}/${p}${f}`,
+`https://quantil.jsdelivr.net/gh/${u}/${r}@${b}/${p}${f}`,
+`https://originfastly.jsdelivr.net/gh/${u}/${r}@${b}/${p}${f}`,
+`https://gcore.jsdelivr.net/gh/${u}/${r}@${b}/${p}${f}`
+]
 
-      const urls = [
-        `https://cdn.jsdelivr.net/gh/${u}/${r}@${b}/${p}${f}`,
-        `https://fastly.jsdelivr.net/gh/${u}/${r}@${b}/${p}${f}`,
-        `https://quantil.jsdelivr.net/gh/${u}/${r}@${b}/${p}${f}`,
-        `https://originfastly.jsdelivr.net/gh/${u}/${r}@${b}/${p}${f}`,
-        `https://gcore.jsdelivr.net/gh/${u}/${r}@${b}/${p}${f}`
-      ];
+let site = ""
+const blank = document.getElementById("blank")
+const full = document.getElementById("full")
+const status = document.getElementById("status")
 
-      const frame = document.getElementById("neo");
-      const status = document.getElementById("status");
-      const blankButton = document.getElementById("about-blank");
-      const fullscreenButton = document.getElementById("fullscreen");
-      let sourceUrl = "";
-      let appHtml = "";
+function prepare(h, url) {
+const base = new URL("./", url).href
+const add = `<base href="${base}" target="_self"><script>addEventListener("pointerdown",()=>{if(!document.fullscreenElement)document.documentElement.requestFullscreen({navigationUI:"hide"}).catch(()=>{})},{once:true})<\/script>`
+h = h.replace(/<base\b[^>]*>/i, "")
+return /<head(?:\s[^>]*)?>/i.test(h) ? h.replace(/<head(?:\s[^>]*)?>/i, x => x + add) : add + h
+}
 
-      function htmlEscape(value) {
-        return String(value)
-          .replace(/&/g, "&amp;")
-          .replace(/"/g, "&quot;")
-          .replace(/</g, "&lt;");
-      }
+async function load() {
+for (let i = 0; i < urls.length; i++) {
+try {
+const res = await fetch(urls[i] + "?v=" + Date.now(), {cache:"no-store"})
+if (res.ok) {
+const h = await res.text()
+if (!/<html[\s>]/i.test(h)) continue
+site = prepare(h, urls[i])
+blank.disabled = full.disabled = false
+status.textContent = "Choose how to launch the site"
+return
+}
+} catch (e) {}
+}
+status.textContent = "The site could not load"
+}
 
-      function prepareDocument(html, source) {
-        const sourceBase = new URL("./", source).href;
-        const baseTag = `<base href="${htmlEscape(sourceBase)}"><meta name="neo-runner" content="1">`;
-        if (/<head(?:\s[^>]*)?>/i.test(html)) {
-          return html.replace(/<head(?:\s[^>]*)?>/i, (head) => head + baseTag);
-        }
-        return baseTag + html;
-      }
+blank.onclick = () => {
+const w = open("about:blank", "_blank")
+if (!w) return status.textContent = "Allow pop-ups and try again"
+w.document.open()
+w.document.write(site)
+w.document.close()
+w.focus()
+const go = w.document.documentElement.requestFullscreen
+if (go) Promise.resolve(go.call(w.document.documentElement, {navigationUI:"hide"})).catch(()=>{})
+}
 
-      async function fetchDocument(url) {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 10000);
-        try {
-          const response = await fetch(`${url}?v=${Date.now()}`, {
-            cache: "no-store",
-            mode: "cors",
-            signal: controller.signal
-          });
-          if (!response.ok) throw new Error("Source request failed");
-          const html = await response.text();
-          if (!/<html[\s>]/i.test(html)) throw new Error("Source did not return HTML");
-          return prepareDocument(html, url);
-        } finally {
-          clearTimeout(timeout);
-        }
-      }
+full.onclick = () => {
+const frame = document.createElement("iframe")
+frame.allow = "autoplay; clipboard-read; clipboard-write; fullscreen; gamepad"
+frame.allowFullscreen = true
+frame.srcdoc = site
+document.body.replaceChildren(frame)
+const go = frame.requestFullscreen || frame.webkitRequestFullscreen
+if (go) Promise.resolve(go.call(frame, {navigationUI:"hide"})).catch(()=>{})
+}
 
-      async function enterFullscreen(target = document.documentElement) {
-        if (!document.fullscreenEnabled || !target.requestFullscreen) return false;
-        try {
-          await target.requestFullscreen({ navigationUI: "hide" });
-          return true;
-        } catch (error) {
-          return false;
-        }
-      }
-
-      async function openInAboutBlank() {
-        const tab = window.open("about:blank", "_blank");
-        if (!tab) {
-          status.textContent = "Allow pop-ups, then try again.";
-          return;
-        }
-        tab.document.open();
-        tab.document.write(appHtml);
-        tab.document.close();
-        tab.focus();
-        try {
-          await tab.document.documentElement.requestFullscreen({ navigationUI: "hide" });
-        } catch (error) {
-          // Some browsers require a second direct click before fullscreen is allowed.
-        }
-      }
-
-      blankButton.addEventListener("click", openInAboutBlank);
-      fullscreenButton.addEventListener("click", async () => {
-        const active = document.fullscreenElement;
-        if (active) {
-          await document.exitFullscreen();
-          return;
-        }
-        if (!(await enterFullscreen())) status.textContent = "Fullscreen is blocked by this runner.";
-      });
-
-      frame.addEventListener("load", () => {
-        if (appHtml) status.textContent = "NEO is ready";
-      });
-
-      async function load() {
-        for (const url of urls) {
-          try {
-            status.textContent = "Loading NEO…";
-            const html = await fetchDocument(url);
-            sourceUrl = url;
-            appHtml = html;
-            frame.srcdoc = appHtml;
-            blankButton.disabled = false;
-            fullscreenButton.disabled = false;
-            return;
-          } catch (error) {
-            // Try the next public jsDelivr source.
-          }
-        }
-        status.textContent = "NEO could not load from this runner.";
-      }
-
-      load();
-    </script>
-  </body>
+load()
+</script>
+</body>
 </html>
