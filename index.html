@@ -17,7 +17,7 @@ html,body{height:100%;margin:0;background:#05070b;color:#fff;font-family:system-
 <script>
 const u = "unblockedgames99x-code"
 const r = "gloam-vectra-9f2c"
-const b = "c169c02e6bf7beaff8235109c93cc8ebaced822d"
+const b = "3bc4ddaea8eaa4f65d99e26251ff622dd28a1bea"
 const p = "unblocked-games.html"
 const f = ""
 
@@ -36,7 +36,7 @@ const status = document.getElementById("status")
 
 function prepare(h, url) {
 const base = new URL("./", url).href
-const add = `<base href="${base}" target="_self"><script>addEventListener("pointerdown",()=>{if(!document.fullscreenElement)document.documentElement.requestFullscreen({navigationUI:"hide"}).catch(()=>{})},{once:true})<\/script>`
+const add = `<base href="${base}" target="_self"><style>#standalone-launcher-controls{display:none!important}</style><script>addEventListener("pointerdown",()=>{if(!document.fullscreenElement)document.documentElement.requestFullscreen({navigationUI:"hide"}).catch(()=>{})},{once:true})<\/script>`
 h = h.replace(/<base\b[^>]*>/i, "")
 return /<head(?:\s[^>]*)?>/i.test(h) ? h.replace(/<head(?:\s[^>]*)?>/i, x => x + add) : add + h
 }

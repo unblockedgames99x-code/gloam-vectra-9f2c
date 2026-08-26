@@ -1,6 +1,6 @@
 # Unblocked Games site-maker runner
 
-`index.html` is the small, one-file launcher for web-based HTML code runners. It fetches the exact `unblocked-games.html` site-maker file from jsDelivr, so it does not depend on JavaScript being enabled for `file:///` pages. The launcher is pinned to commit `c169c02e6bf7beaff8235109c93cc8ebaced822d` so CDN branch caching cannot mix versions.
+`index.html` is the small, one-file launcher for web-based HTML code runners. It fetches the `unblocked-games.html` site-maker file from jsDelivr, so it does not depend on JavaScript being enabled for `file:///` pages. The launcher is pinned to commit `3bc4ddaea8eaa4f65d99e26251ff622dd28a1bea` so CDN branch caching cannot mix versions.
 
 The two buttons let a user open the same app in an `about:blank` tab or ask the browser to enter fullscreen. Fullscreen permission and the browser's exit banner are controlled by the browser itself.
 
