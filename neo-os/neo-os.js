@@ -1,15 +1,12 @@
 (function () {
   "use strict";
 
-  // Keep the full NEO build on the same jsDelivr revision when it is fetched
-  // into a code runner or about:blank document.
-  var NEO_APP_BASE = new URL("./", document.baseURI);
-  var NEO_CDN_BASE = String(window.__NEO_CDN_BASE || new URL("../", NEO_APP_BASE).href);
-
   var SETTINGS_KEY = "neo_os_settings_v1";
   var WIDGET_LAYOUT_KEY = "neo_os_widget_layout_v1";
   var RECENT_APPS_KEY = "neo_os_recent_apps_v1";
-  var WINDOW_STATE_KEY = "neo_os_window_states_v1";
+  var WINDOW_STATE_KEY = "neo_os_window_states_v2";
+  var DEFAULT_WINDOW_WIDTH = 1180;
+  var DEFAULT_WINDOW_HEIGHT = 760;
   var PINNED_APPS_KEY = "neo_os_pinned_apps_v1";
   var INSTALLED_APPS_KEY = "neo_os_installed_apps_v1";
   var BOOT_SESSION_KEY = "neo_os_booted_session";
@@ -41,6 +38,7 @@
   var mediaPrioritySources = new Set();
   var connectionState = document.getElementById("connection-state");
   var openWindows = new Map();
+  var musicRuntime = window.NEO_MUSIC_RUNTIME;
   var zIndex = 100;
   var windowSequence = 0;
   var catalogPromise = null;
@@ -140,7 +138,7 @@
       accessibleName: "Web app",
       subtitle: "Private DuckDuckGo search",
       icon: "duckduckgo",
-      template: "browser-template",
+      route: "./NEO-BROWSER/index.html",
       width: 1080,
       height: 720,
       launcher: true,
@@ -207,7 +205,7 @@
     },
     music: {
       id: "music",
-      title: "MP3 Player",
+      title: "Audio Player",
       subtitle: "Your local MP3 library",
       icon: "music",
       lazy: true,
@@ -341,10 +339,16 @@
   }
 
   function iconMarkup(name) {
+    if (name === "stream") {
+      return '<svg class="app-image-icon spotify-vector" viewBox="0 0 64 64" aria-hidden="true" focusable="false">' +
+        '<circle cx="32" cy="32" r="32" fill="#1ed760"/>' +
+        '<path fill="#050505" d="M47.94 46.86a2.06 2.06 0 0 1-2.83.68c-7.73-4.73-17.47-5.8-28.93-3.18a2.06 2.06 0 1 1-.92-4.01c12.55-2.87 23.32-1.64 32.01 3.67.97.6 1.27 1.87.67 2.84Zm3.77-8.39a2.58 2.58 0 0 1-3.54.85c-8.85-5.44-22.35-7.02-32.82-3.84a2.58 2.58 0 0 1-1.5-4.93c11.97-3.63 26.85-1.87 37 4.36a2.58 2.58 0 0 1 .86 3.56Zm.32-8.74c-10.63-6.31-28.2-6.9-38.34-3.9a3.09 3.09 0 1 1-1.75-5.92c11.65-3.43 31.06-2.75 43.25 4.49a3.09 3.09 0 0 1-3.16 5.33Z"/>' +
+      '</svg>';
+    }
     var imageIcons = {
       duckduckgo: "./assets/duckduckgo.png",
       chat: "./assets/messages.png",
-      stream: "./assets/spotify.svg?v=20260824-spotify-v1",
+      "geometry-dash": "./assets/geometry-dash.png",
       "google-drive": "./assets/google-drive.svg?v=20260824-drive-logo-v3",
       wallpaper: "./assets/wallpaper-engine.png"
     };
@@ -922,8 +926,8 @@
     else installedAppIds.delete(id);
     if (!app.installed) {
       app.pinned = false;
-      var open = openWindows.get(id);
-      if (open) closeWindow(open);
+      var open = musicRuntime.getWindow(id, openWindows);
+      if (open) closeWindow(open, true);
     }
     writeJson(INSTALLED_APPS_KEY, Array.from(installedAppIds));
     writeJson(PINNED_APPS_KEY, launcherApps().filter(function (item) { return item.pinned; }).map(function (item) { return item.id; }));
@@ -1158,8 +1162,8 @@
     var availableWidth = Math.max(320, window.innerWidth - 40);
     var availableHeight = Math.max(280, window.innerHeight - 120);
     var savedWindow = windowStates[app.id] || {};
-    var width = Math.min(clamp(Number(savedWindow.width || app.width || 1000), 320, availableWidth), availableWidth);
-    var height = Math.min(clamp(Number(savedWindow.height || app.height || 700), 280, availableHeight), availableHeight);
+    var width = Math.min(clamp(Number(savedWindow.width || DEFAULT_WINDOW_WIDTH), 320, availableWidth), availableWidth);
+    var height = Math.min(clamp(Number(savedWindow.height || DEFAULT_WINDOW_HEIGHT), 280, availableHeight), availableHeight);
     win.style.width = width + "px";
     win.style.height = height + "px";
     if (!isSmallScreen()) {
@@ -1210,12 +1214,12 @@
       if (!document.querySelector('link[data-neo-features]')) {
         var style = document.createElement("link");
         style.rel = "stylesheet";
-        style.href = "./neo-os-features.css?v=20260824-now-playing-volume-v2";
+        style.href = "./neo-os-features.css?v=20260826-playlist-actions-v1";
         style.dataset.neoFeatures = "";
         document.head.appendChild(style);
       }
       var script = document.createElement("script");
-      script.src = "./neo-os-features.js?v=20260824-music-fast-start-v6";
+      script.src = "./neo-os-features.js?v=20260826-playlist-actions-v1";
       script.async = true;
       script.onload = function () {
         if (!window.NEO_FEATURES) {
@@ -1265,7 +1269,7 @@
       var existing = document.getElementById("neo-browse-runtime-script");
       var script = existing || document.createElement("script");
       script.id = "neo-browse-runtime-script";
-      script.src = "./neo-browser-runtime.js?v=20260825-music-transport-v17";
+      script.src = "./neo-browser-runtime.js?v=20260825-favorites-spelling-v20";
       script.async = true;
       script.onload = function () {
         if (!window.NEO_BROWSER_ENGINE) {
@@ -1286,7 +1290,6 @@
   }
 
   function scheduleBrowsePrewarm() {
-    if (document.querySelector('meta[name="neo-runner"]')?.content === "1") return;
     if (!("serviceWorker" in navigator) || navigator.onLine === false) return;
     var connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
     if (connection && (connection.saveData || /(^|-)2g$/.test(connection.effectiveType || ""))) return;
@@ -1331,41 +1334,31 @@
   }
 
   function mountUnifiedMusic(app, body) {
-    body.classList.add("music-unified-window-body");
-    body.innerHTML =
-      '<section class="music-unified-shell" data-unified-music>' +
-        '<nav class="music-unified-tabs" role="tablist" aria-label="Music sources">' +
-          '<button type="button" role="tab" aria-selected="true" aria-controls="music-listen-panel" data-unified-music-mode="listen">' + iconMarkup("stream") + '<span>Listen</span></button>' +
-          '<button type="button" role="tab" aria-selected="false" aria-controls="music-mp3-panel" data-unified-music-mode="mp3">' + iconMarkup("music") + '<span>MP3 Player</span></button>' +
-        '</nav>' +
-        '<div class="music-unified-panel" id="music-listen-panel" role="tabpanel" data-unified-music-panel="listen"></div>' +
-        '<div class="music-unified-panel" id="music-mp3-panel" role="tabpanel" data-unified-music-panel="mp3" hidden></div>' +
-      '</section>';
-
-    var shell = body.querySelector("[data-unified-music]");
-    var tabs = Array.from(shell.querySelectorAll("[data-unified-music-mode]"));
-    var listenPanel = shell.querySelector('[data-unified-music-panel="listen"]');
-    var mp3Panel = shell.querySelector('[data-unified-music-panel="mp3"]');
+    var view = musicRuntime.createShell(app, body, iconMarkup);
+    var shell = view.shell;
+    var tabs = view.tabs;
+    var listenPanel = view.listenPanel;
+    var mp3Panel = view.mp3Panel;
     var template = document.getElementById(app.template);
     var mp3Promise = null;
 
-    if (template) {
+    if (!view.direct && template) {
       listenPanel.appendChild(template.content.cloneNode(true));
       wireBrowserApp(listenPanel, app);
-    } else {
+    } else if (!view.direct) {
       listenPanel.innerHTML = '<div class="feature-loader is-error" role="alert"><strong>Music is unavailable</strong><p>The listening workspace could not be opened.</p></div>';
     }
 
     function loadMp3Player() {
       if (mp3Promise) return mp3Promise;
-      mp3Panel.innerHTML = '<div class="feature-loader" role="status"><span class="library-spinner" aria-hidden="true"></span><strong>Opening MP3 Player</strong><p>Loading your local music library.</p></div>';
+      mp3Panel.innerHTML = '<div class="feature-loader" role="status"><span class="library-spinner" aria-hidden="true"></span><strong>Opening Audio Player</strong><p>Loading your local audio library.</p></div>';
       mp3Promise = loadFeatureRuntime().then(function (runtime) {
         if (!body.isConnected) return;
         mp3Panel.textContent = "";
         runtime.mount("music", mp3Panel, shellApi);
       }).catch(function (error) {
         mp3Promise = null;
-        mp3Panel.innerHTML = '<div class="feature-loader is-error" role="alert"><strong>Could not open MP3 Player</strong><p></p><button class="button" type="button" data-mp3-retry>Retry</button></div>';
+        mp3Panel.innerHTML = '<div class="feature-loader is-error" role="alert"><strong>Could not open Audio Player</strong><p></p><button class="button" type="button" data-mp3-retry>Retry</button></div>';
         mp3Panel.querySelector("p").textContent = error && error.message ? error.message : "The local player is unavailable.";
         mp3Panel.querySelector("[data-mp3-retry]").addEventListener("click", loadMp3Player);
       });
@@ -1429,7 +1422,6 @@
     var appMode = app.browserChrome === false;
     var appTheme = app.browserTheme || "";
     var directOrigin = app.browserDirect === true;
-    var runnerMode = document.querySelector('meta[name="neo-runner"]')?.content === "1";
     browser.classList.toggle("is-dedicated-app", appMode);
 
     var form = browser.querySelector("[data-browser-search-form]");
@@ -1480,13 +1472,6 @@
       });
     }
 
-    function openRunnerTab(target) {
-      var tab = window.open(target, "_blank");
-      if (!tab) return false;
-      try { tab.opener = null; } catch (error) {}
-      return true;
-    }
-
     function openTarget(targetHref, label) {
       var target;
       try { target = new URL(targetHref); } catch (error) { return; }
@@ -1494,19 +1479,6 @@
       currentQuery = label || target.hostname;
       currentTarget = target.href;
       input.value = currentQuery;
-      if (runnerMode) {
-        stopRequest();
-        content.textContent = "";
-        if (openRunnerTab(target.href)) {
-          retry.textContent = "Retry";
-          setBrowserState("home");
-          showToast("Opened in a new tab", "Browse and search open normally from this code runner.", "external");
-        } else {
-          retry.textContent = "Open website";
-          setBrowserState("error", "Your browser blocked the new tab. Select Open website to try again.");
-        }
-        return;
-      }
       stopRequest();
       content.textContent = "";
       setBrowserState("loading");
@@ -1531,16 +1503,6 @@
     }
 
     function openNewTabShell(addSecondTab) {
-      if (runnerMode) {
-        currentQuery = "";
-        currentTarget = "";
-        input.value = "";
-        stopRequest();
-        content.textContent = "";
-        setBrowserState("home");
-        input.focus({ preventScroll: true });
-        return;
-      }
       currentQuery = "";
       currentTarget = "";
       input.value = "";
@@ -1648,11 +1610,9 @@
       if (detail.target) openTarget(detail.target, detail.label || "Web page");
     });
     if (hostWindow) hostWindow._neoBrowserCleanup = stopRequest;
-    if (!runnerMode) {
-      var warmBrowse = function () { prepareBrowserEngine().catch(function () {}); };
-      if ("requestIdleCallback" in window) window.requestIdleCallback(warmBrowse, { timeout: 900 });
-      else window.setTimeout(warmBrowse, 120);
-    }
+    var warmBrowse = function () { prepareBrowserEngine().catch(function () {}); };
+    if ("requestIdleCallback" in window) window.requestIdleCallback(warmBrowse, { timeout: 900 });
+    else window.setTimeout(warmBrowse, 120);
     requestAnimationFrame(function () {
       if (initialTarget) openTarget(initialTarget, initialLabel || "Web app");
       else input.focus({ preventScroll: true });
@@ -2548,14 +2508,55 @@
     var frame = document.createElement("iframe");
     frame.title = app.title;
     frame.loading = "eager";
+    if (app.id === "browser") frame.setAttribute("fetchpriority", "high");
     frame.referrerPolicy = "same-origin";
-    frame.sandbox = "allow-same-origin allow-scripts allow-forms allow-popups allow-downloads allow-modals allow-pointer-lock allow-presentation";
+    var frameSandbox = [
+      "allow-same-origin",
+      "allow-scripts",
+      "allow-forms",
+      "allow-popups",
+      "allow-downloads",
+      "allow-pointer-lock",
+      "allow-presentation"
+    ];
+    if (app.id !== "browser") frameSandbox.push("allow-modals");
+    frame.sandbox = frameSandbox.join(" ");
     frame.allow = "fullscreen; autoplay; gamepad; clipboard-read; clipboard-write";
     frame.setAttribute("allowfullscreen", "");
     frame.dataset.route = app.route;
     body.append(loader, fallback, frame);
 
     var timeout = 0;
+    var hostWindow = body.closest(".neo-window");
+    function relayNeoBrowserMessage(event) {
+      if (app.id !== "browser" || event.source === frame.contentWindow) return;
+      var data = event.data;
+      if (!data || typeof data !== "object" || !Object.prototype.hasOwnProperty.call(data, "__neoBridge")) return;
+      try {
+        frame.contentWindow.postMessage(data, "*");
+      } catch (_error) {
+        // Ignore messages sent while the browser frame is being replaced.
+      }
+    }
+    if (app.id === "browser") {
+      window.addEventListener("message", relayNeoBrowserMessage);
+      if (hostWindow) hostWindow._neoExtraCleanup = function () {
+        window.removeEventListener("message", relayNeoBrowserMessage);
+      };
+    }
+    function applyHostIntegration() {
+      if (app.id !== "browser") return;
+      try {
+        var frameDocument = frame.contentDocument;
+        if (!frameDocument || !frameDocument.head || frameDocument.getElementById("neo-os-browser-host-fixes")) return;
+        var style = frameDocument.createElement("style");
+        style.id = "neo-os-browser-host-fixes";
+        style.textContent = "#spotOverlay{pointer-events:none!important}";
+        frameDocument.head.appendChild(style);
+      } catch (_error) {
+        // The supplied browser remains usable if a future build becomes cross-origin.
+      }
+    }
     function beginLoad() {
       loader.classList.remove("is-complete");
       fallback.classList.remove("is-visible");
@@ -2568,6 +2569,7 @@
     }
     frame.addEventListener("load", function () {
       window.clearTimeout(timeout);
+      applyHostIntegration();
       loader.classList.add("is-complete");
       fallback.classList.remove("is-visible");
     });
@@ -2591,12 +2593,14 @@
     if (app.launcher) recordRecentApp(id);
     var existing = openWindows.get(id);
     if (existing) {
-      existing.classList.remove("is-minimized");
+      setWindowMinimized(existing, false);
       renderDock();
       activateWindow(existing);
       requestAnimationFrame(function () { existing.classList.add("is-open"); });
       return existing;
     }
+    var cached = musicRuntime.restoreWindow(id, openWindows, renderDock, activateWindow);
+    if (cached) return cached;
     return createWindow(app);
   }
 
@@ -2664,11 +2668,14 @@
     }
   }
 
-  function closeWindow(win) {
+  function closeWindow(win, forceDestroy) {
     if (!win) return;
     var id = win.dataset.appId;
+    var app = apps[id];
+    if (!win.hidden) saveWindowState(win);
+    if (musicRuntime.cacheWindow(win, id, openWindows, app, forceDestroy, renderDock, activateTopWindow)) return;
     if (id === "stream") renderNowPlaying({ source: "browse-media:stream", active: false });
-    saveWindowState(win);
+    musicRuntime.dropWindow(id);
     if (win._neoResizeObserver) win._neoResizeObserver.disconnect();
     if (typeof win._neoBrowserCleanup === "function") win._neoBrowserCleanup();
     if (typeof win._neoMessagesCleanup === "function") win._neoMessagesCleanup();
@@ -2686,10 +2693,19 @@
 
   function minimizeWindow(win) {
     if (!win) return;
-    win.classList.add("is-minimized");
+    if (document.activeElement && win.contains(document.activeElement)) document.activeElement.blur();
+    setWindowMinimized(win, true);
     win.classList.remove("is-active");
     renderDock();
     activateTopWindow();
+  }
+
+  function setWindowMinimized(win, minimized) {
+    if (!win) return;
+    win.classList.toggle("is-minimized", minimized);
+    win.toggleAttribute("inert", minimized);
+    if (minimized) win.setAttribute("aria-hidden", "true");
+    else win.removeAttribute("aria-hidden");
   }
 
   function toggleMaximize(win) {
@@ -2893,7 +2909,7 @@
   function loadCatalog() {
     if (catalog) return Promise.resolve(catalog);
     if (catalogPromise) return catalogPromise;
-    catalogPromise = fetch(new URL("games/index.json", NEO_CDN_BASE).href, { credentials: "omit", cache: "force-cache" })
+    catalogPromise = fetch("/games/index.json", { credentials: "same-origin", cache: "force-cache" })
       .then(function (response) {
         if (!response.ok) throw new Error("Catalog request failed");
         return response.json();
@@ -2919,7 +2935,7 @@
   function loadCoverManifest() {
     if (coverManifestLoaded) return Promise.resolve(coverManifest);
     if (coverManifestPromise) return coverManifestPromise;
-    coverManifestPromise = fetch(new URL("games/covers.json?v=20260802-neo-v2", NEO_CDN_BASE).href, { credentials: "omit", cache: "force-cache" })
+    coverManifestPromise = fetch("/games/covers.json?v=20260802-neo-v2", { credentials: "same-origin", cache: "force-cache" })
       .then(function (response) {
         if (!response.ok) throw new Error("Cover manifest request failed");
         return response.json();
@@ -3158,8 +3174,7 @@
     var safe = encodeURIComponent(slug);
     var candidates = [];
     var mapped = String(coverManifest[slug] || "").trim();
-    if (/^\/games\/captured-covers\//i.test(mapped)) candidates.push(new URL(mapped.replace(/^\/+/, ""), NEO_CDN_BASE).href);
-    else if (/^https:\/\//i.test(mapped)) candidates.push(mapped);
+    if (/^\/games\/captured-covers\//i.test(mapped) || /^https:\/\//i.test(mapped)) candidates.push(mapped);
     [
       "/games/captured-covers/" + safe + "-cover.webp",
       "/games/captured-covers/" + safe + "-illustrated.webp",
@@ -3169,7 +3184,6 @@
       "/games/captured-covers/" + safe + ".jpeg",
       "/games/captured-covers/" + safe + ".png"
     ].forEach(function (candidate) {
-      candidate = new URL(candidate.replace(/^\/+/, ""), NEO_CDN_BASE).href;
       if (candidates.indexOf(candidate) === -1) candidates.push(candidate);
     });
     return candidates;
@@ -3197,39 +3211,26 @@
       showToast("Game unavailable", "This catalog entry does not point to a local HTML game file.", "info");
       return;
     }
-    var tab = window.open("about:blank", "_blank");
-    if (!tab) {
-      showToast("Pop-up blocked", "Allow pop-ups to launch this game.", "info");
-      return;
+    var id = "zone-" + entry.slug;
+    if (!apps[id]) {
+      apps[id] = {
+        id: id,
+        title: displayGameName(entry.name),
+        subtitle: "HTML game",
+        icon: "gamepad",
+        route: route,
+        width: 1240,
+        height: 790,
+        launcher: false
+      };
     }
-    tab.document.open();
-    tab.document.write("<!doctype html><title>Loading game…</title><style>html,body{height:100%;margin:0;background:#080a0d;color:#fff;font:16px system-ui;display:grid;place-items:center}</style>Loading game…");
-    tab.document.close();
-    fetch(route, { credentials: "omit", cache: "force-cache" })
-      .then(function (response) {
-        if (!response.ok) throw new Error("Game request failed");
-        return response.text();
-      })
-      .then(function (html) {
-        if (tab.closed) return;
-        var sourceBase = new URL("./", route).href;
-        var baseTag = '<base href="' + sourceBase.replace(/&/g, "&amp;").replace(/"/g, "&quot;") + '">';
-        html = /<head(?:\s[^>]*)?>/i.test(html)
-          ? html.replace(/<head(?:\s[^>]*)?>/i, function (head) { return head + baseTag; })
-          : baseTag + html;
-        tab.document.open();
-        tab.document.write(html);
-        tab.document.close();
-      })
-      .catch(function () {
-        if (!tab.closed) tab.document.body.textContent = "This game could not load.";
-      });
+    openApp(id);
   }
 
   function localGameRoute(entry) {
     var file = String(entry && entry.file || "").replace(/\\/g, "/");
     if (!/^games\/[A-Za-z0-9._()\[\] -]+\.html$/.test(file)) return "";
-    return new URL(file.split("/").map(encodeURIComponent).join("/"), NEO_CDN_BASE).href;
+    return "/" + file.split("/").map(encodeURIComponent).join("/");
   }
 
   function openWallpaperDatabase() {
@@ -4740,6 +4741,7 @@
       });
     }
     renderDock();
+    if (window.NEO_TASKBAR_PREVIEW) window.NEO_TASKBAR_PREVIEW.start(document.getElementById("neo-dock"), openWindows, apps, openApp, closeWindow);
     renderLauncher();
     applySettings();
     updateClock();

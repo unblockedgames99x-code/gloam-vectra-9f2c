@@ -7,9 +7,9 @@
 
   var defaults = {
     color: "#f7f7f7",
-    scale: 100,
+    scale: 150,
     opacity: 100,
-    position: "top-center",
+    position: "middle-center",
     shadow: true
   };
   var positions = [
@@ -39,7 +39,7 @@
     var next = Object.assign({}, defaults, value && typeof value === "object" ? value : {});
     if (!/^#[0-9a-f]{6}$/i.test(next.color)) next.color = defaults.color;
     next.color = next.color.toLowerCase();
-    next.scale = clamp(next.scale, 70, 150);
+    next.scale = clamp(next.scale, 70, 250);
     next.opacity = clamp(next.opacity, 35, 100);
     if (positions.indexOf(next.position) === -1) next.position = defaults.position;
     next.shadow = next.shadow !== false;
@@ -69,15 +69,15 @@
     '  </div>',
     '</div>',
     '<div class="rainmeter-editor-section">',
-    '  <div class="rainmeter-control-heading"><label for="rainmeter-size">Size</label><output data-rainmeter-size-value>100%</output></div>',
-    '  <input class="rainmeter-range" id="rainmeter-size" data-rainmeter-size type="range" min="70" max="150" step="5" value="100" />',
+    '  <div class="rainmeter-control-heading"><label for="rainmeter-size">Size</label><output data-rainmeter-size-value>150%</output></div>',
+    '  <input class="rainmeter-range" id="rainmeter-size" data-rainmeter-size type="range" min="70" max="250" step="5" value="150" />',
     '</div>',
     '<div class="rainmeter-editor-section">',
     '  <div class="rainmeter-control-heading"><label for="rainmeter-opacity">Opacity</label><output data-rainmeter-opacity-value>100%</output></div>',
     '  <input class="rainmeter-range" id="rainmeter-opacity" data-rainmeter-opacity type="range" min="35" max="100" step="5" value="100" />',
     '</div>',
     '<div class="rainmeter-editor-section">',
-    '  <div class="rainmeter-control-heading"><strong>Position</strong><output data-rainmeter-position-value>Top center</output></div>',
+    '  <div class="rainmeter-control-heading"><strong>Position</strong><output data-rainmeter-position-value>Middle Center</output></div>',
     '  <div class="rainmeter-position-grid" role="group" aria-label="Clock position">',
     positions.map(function (position) { return '<button class="rainmeter-position" type="button" data-rainmeter-position="' + position + '" aria-label="' + labelFor(position) + '" aria-pressed="false"><span aria-hidden="true"></span></button>'; }).join(""),
     '  </div>',
@@ -220,7 +220,7 @@
   });
 
   sizeInput.addEventListener("input", function () {
-    state.scale = clamp(sizeInput.value, 70, 150);
+    state.scale = clamp(sizeInput.value, 70, 250);
     applyState();
     syncPanel();
     scheduleSave();

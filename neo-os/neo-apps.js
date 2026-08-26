@@ -19,6 +19,19 @@
       category: "Media",
       aliases: ["music", "spotify", "stream", "songs", "albums", "artists", "radio", "playlists", "mp3", "local music", "audio player"]
     },
+    "geometry-dash": {
+      id: "geometry-dash",
+      title: "Geometry Dash",
+      subtitle: "Rhythm platformer",
+      icon: "geometry-dash",
+      route: "../games/geometry-dash-lite.html",
+      width: 1180,
+      height: 760,
+      launcher: true,
+      pinned: true,
+      category: "Games",
+      aliases: ["geometry dash", "geometry", "dash", "rhythm", "platformer"]
+    },
     notes: {
       id: "notes",
       title: "Notes",
@@ -37,7 +50,7 @@
       id: "calculator",
       title: "Calculator",
       subtitle: "Fast local calculations",
-      icon: "grid",
+      icon: "calculator",
       lazy: true,
       width: 390,
       height: 570,
@@ -192,6 +205,18 @@
         localStorage.setItem("neo_os_pinned_apps_v1", JSON.stringify(appPins));
       }
       localStorage.setItem(myAppsMigrationKey, "1");
+    }
+
+    var geometryDashMigrationKey = "neo_os_geometry_dash_app_v1";
+    if (localStorage.getItem(geometryDashMigrationKey) !== "1") {
+      ["neo_os_pinned_apps_v1", "neo_os_installed_apps_v1"].forEach(function (key) {
+        var ids = JSON.parse(localStorage.getItem(key) || "null");
+        if (!Array.isArray(ids) || ids.indexOf("geometry-dash") !== -1) return;
+        var zonesIndex = ids.indexOf("zones");
+        ids.splice(zonesIndex === -1 ? ids.length : zonesIndex + 1, 0, "geometry-dash");
+        localStorage.setItem(key, JSON.stringify(ids));
+      });
+      localStorage.setItem(geometryDashMigrationKey, "1");
     }
   } catch (error) {}
 })();

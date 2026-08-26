@@ -118,8 +118,7 @@
     const relation = String(node.rel || "").toLowerCase();
     if (relation !== "modulepreload" && relation !== "stylesheet") return;
 
-    const routePrefix = window.__uv$config?.prefix || "";
-    if (!routePrefix) return;
+    const routePrefix = window.location.pathname.match(/^\/neo-os\/browse-v\d+\//)?.[0] || "/neo-os/browse/";
     let routedUrl;
     try {
       routedUrl = new URL(node.getAttribute("href") || node.href, window.location.href);
@@ -591,7 +590,7 @@
         const target = event.target instanceof Element ? event.target : document.documentElement;
         inspectedElement = target;
         setInspectMode(false);
-        scheduleHighlight(target);
+        clearHighlight();
         postInspectorMessage("neo-browser:inspect-selected", target);
         return;
       }

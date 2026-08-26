@@ -1,10 +1,9 @@
-import "./browser-runtime/uv/uv.bundle.js?engine=neo-browse-v65";
-import "./browser-runtime/uv/uv.config.js?engine=neo-browse-v65";
-import "./browser-runtime/uv/uv.sw.js";
+import "/neo-os/browser-runtime/uv/uv.bundle.js?engine=neo-browse-v66";
+import "/neo-os/browser-runtime/uv/uv.config.js?engine=neo-browse-v66";
+import "/neo-os/browser-runtime/uv/uv.sw.js";
 
-const ENGINE_VERSION = "neo-browse-v65";
-const APP_BASE = new URL("./", self.location.href);
-const ROUTE_PREFIX = new URL("./browse-v65/", APP_BASE).pathname;
+const ENGINE_VERSION = "neo-browse-v66";
+const ROUTE_PREFIX = "/neo-os/browse-v66/";
 const ultraviolet = new UVServiceWorker();
 const RETRYABLE_METHODS = new Set(["GET", "HEAD"]);
 const FALLBACK_TIMEOUT_MS = 8000;
@@ -205,14 +204,6 @@ async function fetchMusicAudio(event, source) {
   });
 }
 
-function reportMusicStream(stage, detail = "") {
-  self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
-    for (const client of clients) {
-      client.postMessage({ type: "neo-browser:music-stream", engine: ENGINE_VERSION, stage, detail });
-    }
-  }).catch(() => {});
-}
-
 async function isMissingTransportResponse(response) {
   if (!response || response.status !== 500) return false;
   const type = response.headers.get("content-type") || "";
@@ -275,12 +266,7 @@ self.addEventListener("fetch", (event) => {
 
   const audioSource = musicAudioSource(event.request);
   if (audioSource) {
-    reportMusicStream("detected");
-    event.respondWith(fetchMusicAudio(event, audioSource).then((response) => {
-      reportMusicStream("response", String(response.status));
-      return response;
-    }).catch((error) => {
-      reportMusicStream("error", String(error?.message || error).slice(0, 120));
+    event.respondWith(fetchMusicAudio(event, audioSource).catch(() => {
       return new Response(null, {
         status: 502,
         headers: { "x-neo-music-stream": "error" },

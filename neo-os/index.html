@@ -35,16 +35,13 @@
       (function () {
         window.__neoProxyRecovery = Promise.resolve();
         if (!("serviceWorker" in navigator)) return;
-        var expectedEngine = "neo-browse-v65";
+        var expectedEngine = "neo-browse-v66";
         var recoveryKey = "neo_proxy_scope_recovered_" + expectedEngine;
-        var expectedScope = new URL("./browse-v65/", document.baseURI).href;
-        var expectedWorkerPath = new URL("./browser-sw.js", document.baseURI).pathname;
+        var expectedScope = new URL("./browse-v66/", window.location.href).href;
         window.__neoProxyRecovery = navigator.serviceWorker.getRegistrations().then(function (registrations) {
           var stale = registrations.filter(function (registration) {
             var workers = [registration.active, registration.waiting, registration.installing].filter(Boolean);
-            if (!workers.some(function (worker) {
-              try { return new URL(worker.scriptURL).pathname === expectedWorkerPath; } catch (error) { return false; }
-            })) return false;
+            if (!workers.some(function (worker) { return worker.scriptURL.indexOf("/neo-os/browser-sw.js") !== -1; })) return false;
             if (registration.scope !== expectedScope) return true;
             return !workers.some(function (worker) {
               try { return new URL(worker.scriptURL).searchParams.get("engine") === expectedEngine; } catch (error) { return false; }
@@ -71,12 +68,16 @@
       fetchpriority="high"
     />
     <link rel="preload" href="./assets/fonts/anurati.otf" as="font" type="font/otf" crossorigin />
-    <link rel="stylesheet" href="./neo-os.css?v=20260825-white-accents-v1" />
-    <link rel="stylesheet" href="./neo-taskbar-menu.css?v=20260817-accent-v1" />
-    <link rel="stylesheet" href="./neo-apps.css?v=20260825-white-accents-v1" />
+    <link rel="preconnect" href="https://vcsa.huangqirui.xyz" />
+    <link rel="dns-prefetch" href="//vcsa.huangqirui.xyz" />
+    <link rel="prefetch" href="./NEO-BROWSER/index.html" />
+    <link rel="stylesheet" href="./neo-os.css?v=20260825-white-accents-v1-minimize-hit-test-v1-geometry-dash-v1-volume-flyout-v2" />
+    <link rel="stylesheet" href="./neo-taskbar-menu.css?v=20260825-alignment-v1" />
+    <link rel="stylesheet" href="./neo-taskbar-preview.css?v=20260825-window-hover-v2" />
+    <link rel="stylesheet" href="./neo-apps.css?v=20260825-spotify-sharp-v1-icon-completion-v1-music-direct-v1" />
     <link rel="stylesheet" href="./neo-window-resize.css?v=20260815-stability-v1" />
     <link rel="stylesheet" href="./neo-wallpaper-engine.css?v=20260825-white-accents-v1" />
-    <link rel="stylesheet" href="./neo-rainmeter.css?v=20260817-accent-v1" />
+    <link rel="stylesheet" href="./neo-rainmeter.css?v=20260825-default-center-v1" />
     <link rel="stylesheet" href="./neo-launcher-glass.css?v=20260820-profile-outline-v2" />
     <link rel="stylesheet" href="./neo-browser-ui.css?v=20260825-home-tabs-v2" />
     <link rel="stylesheet" href="./neo-flat-ui.css?v=20260819-launcher-oled-v1" />
@@ -211,6 +212,7 @@
       <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 11 9-8 9 8" /><path d="M5 10v11h14V10M9 21v-7h6v7" /></symbol>
       <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12" /><circle cx="4" cy="6" r="1" /><circle cx="4" cy="12" r="1" /><circle cx="4" cy="18" r="1" /></symbol>
       <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></symbol>
+      <symbol id="i-calculator" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2.5" /><path d="M7.5 6.5h9M8 11h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15h.01M8 19h.01M12 19h4" /></symbol>
       <symbol id="i-record" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="3" /></symbol>
       <symbol id="i-brush" viewBox="0 0 24 24"><path d="m14 4 6 6-9 9H5v-6Z" /><path d="m12 6 6 6M5 19c-1.7 0-3 1.3-3 3 1.5 0 3-.5 4-1.5" /></symbol>
       <symbol id="i-terminal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2" /><path d="m7 9 3 3-3 3M13 15h4" /></symbol>
@@ -1136,12 +1138,14 @@
       </div>
     </template>
 
-    <script src="./neo-apps.js?v=20260824-remove-store-v1" defer></script>
+    <script src="./neo-apps.js?v=20260826-music-stable-session-v1" defer></script>
+    <script src="./neo-music-runtime.js?v=20260825-direct-session-v1" defer></script>
     <script src="./neo-wallpaper-engine.js?v=20260824-full-downloads-v2" defer></script>
     <script src="./neo-wallpaper-quality.js?v=20260804-quality-v7" defer></script>
-    <script src="./neo-os.js?v=20260825-ready-discover-v2" defer></script>
+    <script src="./neo-taskbar-preview.js?v=20260825-window-hover-v3" defer></script>
+    <script src="./neo-os.js?v=20260825-ready-discover-v2-minimize-hit-test-v1-neo-browser-build-v1-click-routing-v2-audio-player-labels-v1-large-window-default-v2-geometry-dash-v1-music-direct-v1-taskbar-window-hover-v1-browser-no-native-prompts-v1" defer></script>
     <script src="./neo-window-resize.js?v=20260803-fullscreen-v1" defer></script>
     <script src="./neo-taskbar-menu.js?v=20260805-desktop-menu-v3" defer></script>
-    <script src="./neo-rainmeter.js?v=20260804-v1" defer></script>
+    <script src="./neo-rainmeter.js?v=20260825-default-center-v1" defer></script>
   </body>
 </html>

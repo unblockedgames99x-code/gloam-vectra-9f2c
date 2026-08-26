@@ -14,6 +14,11 @@
   object-fit: contain;
 }
 
+.app-icon-stream .spotify-vector {
+  display: block;
+  shape-rendering: geometricPrecision;
+}
+
 .window-app-icon.app-icon-stream,
 .neo-taskbar-menu-app-icon .app-icon-stream {
   border-radius: 50%;
@@ -71,6 +76,11 @@
   color: #fff !important;
   background: transparent !important;
   border-radius: 0 !important;
+}
+
+.app-icon-gamepad .icon {
+  color: #fff !important;
+  stroke: currentColor !important;
 }
 
 .taskbar .dock-button .app-icon-gamepad .icon {
@@ -163,7 +173,17 @@
 }
 
 .app-icon-duckduckgo .app-image-icon {
-  transform: scale(1.22);
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  transform: none !important;
+}
+
+.launcher-app[data-app="browser"] .launcher-app-icon.app-icon-duckduckgo {
+  width: 38px !important;
+  min-width: 38px !important;
+  height: 38px !important;
+  justify-self: center;
 }
 
 .app-icon-search,
@@ -348,6 +368,42 @@
 .music-unified-panel > .neo-browser-app,
 .music-unified-panel > .feature-app,
 .music-unified-panel > .feature-loader { width: 100%; height: 100%; }
+
+.music-direct-session {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #000;
+}
+
+.music-direct-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #000;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.music-direct-session.is-ready .music-direct-frame { opacity: 1; }
+
+.music-direct-loader {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  margin: 0;
+  background: #000;
+  transition: opacity 140ms ease, visibility 140ms ease;
+}
+
+.music-direct-session.is-ready .music-direct-loader {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.music-direct-loader .button[hidden] { display: none; }
 
 .music-unified-panel .music-app {
   color: #f5f5f5;

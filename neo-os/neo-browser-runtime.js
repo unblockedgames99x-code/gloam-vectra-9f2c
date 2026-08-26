@@ -1,16 +1,13 @@
 (() => {
   "use strict";
 
-  const ENGINE_VERSION = "neo-browse-v65";
-  const APP_BASE = new URL("./", document.baseURI);
-  const OS_SCOPE = APP_BASE.pathname;
-  const ROUTE_PREFIX = new URL("./browse-v65/", APP_BASE).pathname;
-  const RUNTIME_ROOT = new URL("./browser-runtime/", APP_BASE).href.replace(/\/$/, "");
+  const ENGINE_VERSION = "neo-browse-v66";
+  const OS_SCOPE = "/neo-os/";
+  const ROUTE_PREFIX = "/neo-os/browse-v66/";
+  const RUNTIME_ROOT = "/neo-os/browser-runtime";
   const NEW_TAB_DESTINATION = "neo://newtab";
-  const NEW_TAB_PAGE = new URL(`./browser-newtab.html?v=${ENGINE_VERSION}`, APP_BASE).href;
-  const WORKER_URL = new URL(`./browser-sw.js?engine=${ENGINE_VERSION}`, APP_BASE).href;
-  const DUCKDUCKGO_ICON = new URL("./assets/duckduckgo.png", APP_BASE).href;
-  const PROXY_CAN_USE_CURRENT_ORIGIN = APP_BASE.origin === window.location.origin;
+  const NEW_TAB_PAGE = "/neo-os/browser-newtab.html?v=neo-browse-v66";
+  const WORKER_URL = `/neo-os/browser-sw.js?engine=${ENGINE_VERSION}`;
   const BAREMUX_WORKER_URL = `${RUNTIME_ROOT}/baremux/worker.js?engine=${ENGINE_VERSION}`;
   const PRIMARY_TRANSPORT_URL = `${RUNTIME_ROOT}/epoxy/index.mjs?engine=${ENGINE_VERSION}`;
   const FALLBACK_TRANSPORT_URL = `${RUNTIME_ROOT}/libcurl/index.mjs?engine=${ENGINE_VERSION}`;
@@ -75,7 +72,7 @@
       const link = existing || document.createElement("link");
       link.id = "neo-browser-runtime-styles";
       link.rel = "stylesheet";
-      link.href = new URL(`./neo-browser-runtime.css?engine=${ENGINE_VERSION}&ui=stream-music-v1`, APP_BASE).href;
+      link.href = `/neo-os/neo-browser-runtime.css?engine=${ENGINE_VERSION}&ui=stream-music-v1`;
       link.addEventListener("load", resolve, { once: true });
       link.addEventListener("error", () => reject(new Error("The web app styles could not load.")), { once: true });
       if (!existing) document.head.appendChild(link);
@@ -90,7 +87,7 @@
     const theme = String(name || "").trim();
     if (!theme) return Promise.resolve("");
     if (appThemePromises.has(theme)) return appThemePromises.get(theme);
-    const source = theme === "stream-music" ? new URL("./stream-music-frame.css", APP_BASE).href : "";
+    const source = theme === "stream-music" ? "/neo-os/stream-music-frame.css" : "";
     if (!source) return Promise.resolve("");
     const request = withTimeout(
       fetch(`${source}?engine=${ENGINE_VERSION}`, { cache: "no-store" }).then((response) => {
@@ -111,6 +108,35 @@
     const state = { scheduled: false };
     const unwantedMessage = /open music inside tung tung|use parties/i;
 
+    function normalizeFavoriteSpelling() {
+      const body = frameDocument.body;
+      if (!body) return;
+
+      const americanize = (value) =>
+        String(value || "")
+          .replace(/\bFavourites\b/g, "Favorites")
+          .replace(/\bfavourites\b/g, "favorites");
+      const walker = frameDocument.createTreeWalker(
+        body,
+        frameWindow.NodeFilter.SHOW_TEXT,
+      );
+      let textNode = walker.nextNode();
+      while (textNode) {
+        const corrected = americanize(textNode.nodeValue);
+        if (corrected !== textNode.nodeValue) textNode.nodeValue = corrected;
+        textNode = walker.nextNode();
+      }
+
+      body.querySelectorAll("[aria-label], [title], [placeholder]").forEach((node) => {
+        ["aria-label", "title", "placeholder"].forEach((attribute) => {
+          if (!node.hasAttribute(attribute)) return;
+          const current = node.getAttribute(attribute);
+          const corrected = americanize(current);
+          if (corrected !== current) node.setAttribute(attribute, corrected);
+        });
+      });
+    }
+
     function cleanMusicChrome() {
       state.scheduled = false;
       frameDocument.documentElement.classList.remove("neo-listen-parties-view");
@@ -129,6 +155,7 @@
       frameDocument.querySelectorAll(".toast, .snackbar, [role='status'], [role='alert']").forEach((node) => {
         if (unwantedMessage.test(node.textContent || "")) node.remove();
       });
+      normalizeFavoriteSpelling();
     }
 
     function scheduleCleanup() {
@@ -141,6 +168,7 @@
     observer.observe(frameDocument.body, {
       attributes: true,
       attributeFilter: ["class"],
+      characterData: true,
       childList: true,
       subtree: true,
     });
@@ -417,9 +445,6 @@
   }
 
   function getRuntime() {
-    if (!PROXY_CAN_USE_CURRENT_ORIGIN) {
-      return Promise.reject(new Error("The NEO browser needs a direct HTTPS host."));
-    }
     runtimePromise ||= withTimeout(
       createRuntime(),
       40000,
@@ -590,7 +615,7 @@
         <button type="button" data-browser-forward aria-label="Go forward">${icon("arrow-right")}</button>
         <button type="button" data-browser-reload aria-label="Reload page">${icon("refresh")}</button>
         <form class="neo-browser-address" data-browser-address-form>
-          <span class="neo-browser-address-mark" aria-hidden="true"><img src="${DUCKDUCKGO_ICON}" width="17" height="17" alt="" /></span>
+          <span class="neo-browser-address-mark" aria-hidden="true"><img src="/neo-os/assets/duckduckgo.png" width="17" height="17" alt="" /></span>
           <label class="sr-only" for="neo-runtime-address">Address or search</label>
           <input id="neo-runtime-address" data-browser-address autocomplete="off" spellcheck="false" placeholder="Search DuckDuckGo or type a URL" aria-label="Address or search" />
           <button type="submit" data-browser-submit aria-label="Open address">${icon("arrow-right")}</button>
@@ -914,7 +939,7 @@
       inspector.classList.add("is-open");
       inspector.setAttribute("aria-hidden", "false");
       inspectorPicker.setAttribute("aria-pressed", "false");
-      postToTab(tab, { type: "neo-browser:inspect-highlight" });
+      postToTab(tab, { type: "neo-browser:inspect-clear" });
       closeContextMenu();
     }
 
@@ -1155,7 +1180,7 @@
       element.dataset.tabId = id;
       element.innerHTML = `
         <button class="neo-browser-tab" type="button" role="tab" aria-selected="false" tabindex="-1">
-          <img class="neo-browser-tab-icon" src="${DUCKDUCKGO_ICON}" width="16" height="16" alt="" />
+          <img class="neo-browser-tab-icon" src="/neo-os/assets/duckduckgo.png" width="16" height="16" alt="" />
           <span class="neo-browser-tab-label"></span>
         </button>
         <button class="neo-browser-tab-close" type="button" aria-label="Close tab"><span aria-hidden="true">&times;</span></button>

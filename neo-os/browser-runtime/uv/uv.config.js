@@ -1,15 +1,7 @@
 /* global Ultraviolet */
 (() => {
-  const engineVersion = "neo-browse-v65";
-  const appBase = (() => {
-    if (self.registration?.scope) return new URL("../", self.registration.scope);
-    if (typeof document !== "undefined" && document.currentScript?.src) {
-      return new URL("../../", document.currentScript.src);
-    }
-    return new URL("./", self.location.href);
-  })();
-  const runtimeRoot = new URL("./browser-runtime/", appBase).href.replace(/\/$/, "");
-  const routePrefix = new URL("./browse-v65/", appBase).pathname;
+  const engineVersion = "neo-browse-v66";
+  const runtimeRoot = "/neo-os/browser-runtime";
   const emptyCssUrlMarker =
     "data:application/x-neo-browser-empty-url;base64,AA==";
 
@@ -22,7 +14,7 @@
   }
 
   self.__uv$config = {
-    prefix: routePrefix,
+    prefix: "/neo-os/browse-v66/",
     encodeUrl,
     decodeUrl,
     handler: `${runtimeRoot}/uv/uv.handler.js?engine=${engineVersion}`,
@@ -44,7 +36,7 @@
             attrs: [
               {
                 name: "src",
-                value: `${runtimeRoot}/client-shell.js?ui=${engineVersion}-shell-v8`,
+                value: `${runtimeRoot}/client-shell.js?ui=${engineVersion}-shell-v9`,
                 skip: true,
               },
               {

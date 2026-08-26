@@ -781,8 +781,8 @@
   function musicMarkup() {
     return '<div class="feature-app music-app" data-music-app>' +
       '<aside class="feature-sidebar">' +
-        '<div class="feature-brand"><span class="feature-brand-icon app-icon-music">' + icon("music") + '</span><span><strong>Music</strong><small>Local library</small></span></div>' +
-        '<nav aria-label="Music views">' +
+        '<div class="feature-brand"><span><strong>Audio Player</strong><small>Local library</small></span></div>' +
+        '<nav aria-label="Audio Player views">' +
           '<button class="is-active" type="button" data-music-view="home">' + icon("music") + '<span>Home</span></button>' +
           '<button type="button" data-music-view="search">' + icon("search") + '<span>Search</span></button>' +
           '<button type="button" data-music-view="liked">' + icon("heart") + '<span>Liked Songs</span></button>' +
@@ -791,7 +791,7 @@
         '<div class="playlist-nav" data-playlist-nav></div>' +
       '</aside>' +
       '<main class="feature-content">' +
-        '<header class="feature-content-heading"><div><span class="eyebrow">YOUR MUSIC</span><h2 data-music-title>Home</h2><p data-music-subtitle>Play audio stored on this device.</p></div><label class="feature-import button primary">' + icon("upload") + '<span>Add music</span><input type="file" accept="audio/*" multiple data-music-import /></label></header>' +
+        '<header class="feature-content-heading"><div><span class="eyebrow">YOUR MUSIC</span><h2 data-music-title>Home</h2><p data-music-subtitle>Play audio stored on this device.</p></div><label class="feature-import button primary">' + icon("upload") + '<span>Add audio</span><input type="file" accept="audio/*" multiple data-music-import aria-label="Add audio" /></label></header>' +
         '<label class="feature-search">' + icon("search") + '<span class="sr-only">Search music</span><input type="search" data-music-search placeholder="Search songs" autocomplete="off" /></label>' +
         '<div class="feature-state" data-music-state role="status"><span class="library-spinner" aria-hidden="true"></span><strong>Reading your music</strong><p>Local files stay on this device.</p></div>' +
         '<div class="music-track-list" data-music-list></div>' +
@@ -890,7 +890,7 @@
       var row = document.createElement("article");
       row.className = "music-track" + (item.id === currentTrackId ? " is-current" : "");
       row.dataset.trackId = item.id;
-      row.innerHTML = '<button class="track-play" type="button" data-track-play aria-label="Play song">' + icon(item.id === currentTrackId && !audio.paused ? "pause" : "play") + '</button><span class="track-index"></span><span class="track-art">' + icon("music") + '</span><span class="track-copy"><strong></strong><small>Local file</small></span><span class="track-size"></span><button class="track-action" type="button" data-track-like aria-label="Like song" aria-pressed="false">' + icon("heart") + '</button><button class="track-action" type="button" data-track-add aria-label="Add to playlist">' + icon("plus") + '</button>';
+      row.innerHTML = '<button class="track-play" type="button" data-track-play aria-label="Play song">' + icon(item.id === currentTrackId && !audio.paused ? "pause" : "play") + '</button><span class="track-index"></span><span class="track-art">' + icon("music") + '</span><span class="track-copy"><strong></strong><small>Local file</small></span><span class="track-size"></span><button class="track-action" type="button" data-track-like aria-label="Like song" aria-pressed="false">' + icon("heart") + '</button><button class="track-action track-playlist-action" type="button" data-track-add aria-label="Add to playlist" title="Add to playlist">' + icon("plus") + '<span><span class="track-action-prefix">Add to </span>playlist</span></button>';
       row.querySelector(".track-index").textContent = String(index + 1).padStart(2, "0");
       row.querySelector(".track-art").style.setProperty("--media-hue", hueFor(item.title));
       renderTrackArtwork(row.querySelector(".track-art"), item);
@@ -901,12 +901,16 @@
       like.setAttribute("aria-label", (item.liked ? "Unlike " : "Like ") + item.title);
       like.classList.toggle("is-active", Boolean(item.liked));
       like.setAttribute("aria-pressed", item.liked ? "true" : "false");
+      var playlistAction = row.querySelector("[data-track-add]");
+      playlistAction.setAttribute("aria-label", "Add " + item.title + " to playlist");
+      playlistAction.setAttribute("title", "Add " + item.title + " to playlist");
       if (mount.view === "playlist") {
-        var add = row.querySelector("[data-track-add]");
+        var add = playlistAction;
         add.dataset.trackRemove = "";
         add.removeAttribute("data-track-add");
-        add.setAttribute("aria-label", "Remove from playlist");
-        add.innerHTML = icon("trash");
+        add.setAttribute("aria-label", "Remove " + item.title + " from playlist");
+        add.setAttribute("title", "Remove from playlist");
+        add.innerHTML = icon("trash") + "<span>Remove</span>";
       }
       list.appendChild(row);
     });
@@ -952,9 +956,11 @@
     dialog.querySelector("[data-add-title]").textContent = track ? "Add " + track.title : "Choose a playlist";
     list.textContent = "";
     if (!playlists.length) {
-      var empty = document.createElement("p");
-      empty.textContent = "Create a playlist first.";
-      list.appendChild(empty);
+      var create = document.createElement("button");
+      create.type = "button";
+      create.dataset.createPlaylistForTrack = "";
+      create.innerHTML = icon("plus") + "<span><strong>New playlist</strong><small>Create one and add this song</small></span>";
+      list.appendChild(create);
     } else {
       playlists.forEach(function (playlist) {
         var button = document.createElement("button");
@@ -967,6 +973,15 @@
       });
     }
     openDialog(dialog);
+  }
+
+  function openPlaylistDialog(root, trackId) {
+    var dialog = root.querySelector("[data-playlist-dialog]");
+    dialog.querySelector("[data-playlist-name]").value = "";
+    if (trackId) dialog.dataset.trackId = trackId;
+    else delete dialog.dataset.trackId;
+    openDialog(dialog);
+    requestAnimationFrame(function () { dialog.querySelector("input").focus(); });
   }
 
   function importMusic(files, mount) {
@@ -1030,11 +1045,15 @@
         if (playlist) { playlist.trackIds = playlist.trackIds.filter(function (id) { return id !== trackRow.dataset.trackId; }); savePlaylists(); renderMusic(mount); }
         return;
       }
+      if (event.target.closest("[data-create-playlist-for-track]")) {
+        var addDialog = root.querySelector("[data-add-dialog]");
+        var pendingTrackId = addDialog.dataset.trackId;
+        closeDialog(addDialog);
+        openPlaylistDialog(root, pendingTrackId);
+        return;
+      }
       if (event.target.closest("[data-new-playlist]")) {
-        var dialog = root.querySelector("[data-playlist-dialog]");
-        dialog.querySelector("[data-playlist-name]").value = "";
-        openDialog(dialog);
-        requestAnimationFrame(function () { dialog.querySelector("input").focus(); });
+        openPlaylistDialog(root, "");
         return;
       }
       var add = event.target.closest("[data-add-playlist]");
@@ -1074,10 +1093,13 @@
       if (event.submitter && event.submitter.value === "cancel") { closeDialog(dialog); return; }
       var name = dialog.querySelector("[data-playlist-name]").value.trim();
       if (!name) return;
-      playlists.push({ id: makeId("playlist"), name: name, trackIds: [] });
+      var pendingTrackId = dialog.dataset.trackId || "";
+      playlists.push({ id: makeId("playlist"), name: name, trackIds: pendingTrackId ? [pendingTrackId] : [] });
+      delete dialog.dataset.trackId;
       savePlaylists();
       closeDialog(dialog);
       renderPlaylistNav(mount);
+      if (pendingTrackId) notify("Added to playlist", name, "music");
     });
     var hostWindow = body.closest(".neo-window");
     if (hostWindow) hostWindow._neoExtraCleanup = function () { musicMounts.delete(mount); };
