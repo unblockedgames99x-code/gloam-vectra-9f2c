@@ -1,13 +1,12 @@
-# Unblocked Games site-maker runner
+# NEO OS CDN runner
 
-`index.html` is the small, one-file launcher for web-based HTML code runners. It fetches the `unblocked-games.html` site-maker file from jsDelivr, so it does not depend on JavaScript being enabled for `file:///` pages. The launcher is pinned to commit `3bc4ddaea8eaa4f65d99e26251ff622dd28a1bea` so CDN branch caching cannot mix versions.
+`index.html` is the small, one-file launcher for web-based HTML code runners. It fetches the complete NEO OS browser build from jsDelivr, so it does not depend on JavaScript being enabled for `file:///` pages. The launcher is pinned to commit `34d4dfb53fb8f3a7914cbfd8b74124275f5c3d75`, the current NEO browser-engine v65 build, so CDN branch caching cannot mix versions.
 
 The two buttons let a user open the same app in an `about:blank` tab or ask the browser to enter fullscreen. Fullscreen permission and the browser's exit banner are controlled by the browser itself.
 
 ## Included site files
 
-- `unblocked-games.html` — the exact full site-maker HTML used by the launcher.
-- `neo-os/` — the included static NEO OS files, wallpapers, and browser runtime used by the full site.
+- `neo-os/` — the complete NEO OS browser-engine v65 build, including its wallpapers and browser runtime.
 - `games/` — the complete game catalog and its media (3,989 catalog entries).
 - `netlify/functions/` — the account, chat, music-preview, and wallpaper-discovery server-function source.
 - `learning-zones.html`, `pages/`, `static/`, `icons/`, and root support files — the rest of the published Learning Zones site source. The original root page is named `learning-zones.html` so the small runner can remain the repository's `index.html`.

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Unblocked Games</title>
+<title>NEO OS</title>
 <style>
 html,body{height:100%;margin:0;background:#05070b;color:#fff;font-family:system-ui}body{display:grid;place-items:center}#choose{text-align:center}button{margin:6px;padding:13px 18px;border:0;border-radius:10px;background:#5b5cf0;color:#fff;font-weight:700;cursor:pointer}button+button{background:#252830}button:disabled{opacity:.45;cursor:wait}p{font-size:13px;color:#9ba3b4}iframe{position:fixed;inset:0;width:100%;height:100%;border:0;background:#000}
 </style>
@@ -12,13 +12,13 @@ html,body{height:100%;margin:0;background:#05070b;color:#fff;font-family:system-
 <div id="choose">
 <button id="blank" disabled>Open in about:blank</button>
 <button id="full" disabled>Full screen</button>
-<p id="status">Loading the full site…</p>
+<p id="status">Loading the newest NEO OS…</p>
 </div>
 <script>
 const u = "unblockedgames99x-code"
 const r = "gloam-vectra-9f2c"
-const b = "3bc4ddaea8eaa4f65d99e26251ff622dd28a1bea"
-const p = "unblocked-games.html"
+const b = "34d4dfb53fb8f3a7914cbfd8b74124275f5c3d75"
+const p = "neo-os/index.html"
 const f = ""
 
 const urls = [
@@ -36,8 +36,8 @@ const status = document.getElementById("status")
 
 function prepare(h, url) {
 const base = new URL("./", url).href
-const add = `<base href="${base}" target="_self"><style>#standalone-launcher-controls{display:none!important}</style><script>addEventListener("pointerdown",()=>{if(!document.fullscreenElement)document.documentElement.requestFullscreen({navigationUI:"hide"}).catch(()=>{})},{once:true})<\/script>`
-h = h.replace(/<base\b[^>]*>/i, "")
+const add = `<base href="${base}" target="_self"><meta name="neo-runner" content="1"><script>addEventListener("pointerdown",()=>{if(!document.fullscreenElement)document.documentElement.requestFullscreen({navigationUI:"hide"}).catch(()=>{})},{once:true})<\/script>`
+h = h.replace(/<base\b[^>]*>/gi, "")
 return /<head(?:\s[^>]*)?>/i.test(h) ? h.replace(/<head(?:\s[^>]*)?>/i, x => x + add) : add + h
 }
 
@@ -50,12 +50,12 @@ const h = await res.text()
 if (!/<html[\s>]/i.test(h)) continue
 site = prepare(h, urls[i])
 blank.disabled = full.disabled = false
-status.textContent = "Choose how to launch the site"
+status.textContent = "Choose how to launch NEO OS"
 return
 }
 } catch (e) {}
 }
-status.textContent = "The site could not load"
+status.textContent = "NEO OS could not load"
 }
 
 blank.onclick = () => {
