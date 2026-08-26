@@ -1,10 +1,10 @@
 (() => {
   "use strict";
 
-  const ENGINE_VERSION = "neo-browse-v57";
+  const ENGINE_VERSION = "neo-browse-v65";
   const APP_BASE = new URL("./", document.baseURI);
   const OS_SCOPE = APP_BASE.pathname;
-  const ROUTE_PREFIX = new URL("./browse/", APP_BASE).pathname;
+  const ROUTE_PREFIX = new URL("./browse-v65/", APP_BASE).pathname;
   const RUNTIME_ROOT = new URL("./browser-runtime/", APP_BASE).href.replace(/\/$/, "");
   const NEW_TAB_DESTINATION = "neo://newtab";
   const NEW_TAB_PAGE = new URL(`./browser-newtab.html?v=${ENGINE_VERSION}`, APP_BASE).href;
@@ -20,6 +20,7 @@
   let transportConnection = null;
   let activeTransportUrl = "";
   let transportSetupPromise = null;
+  let transportPrimaryPromise = null;
   let transportFallbackPromise = null;
   let transportRecoveryListenerInstalled = false;
   const appThemePromises = new Map();
@@ -156,6 +157,10 @@
     const worker = registration.installing || registration.waiting || registration.active;
     if (!worker) throw new Error("The web app could not install its worker.");
 
+    if (worker === registration.waiting) {
+      worker.postMessage({ type: "neo-browser:activate", engine: ENGINE_VERSION });
+    }
+
     if (worker.state !== "activated") {
       await withTimeout(
         new Promise((resolve, reject) => {
@@ -261,6 +266,72 @@
     return transportSetupPromise;
   }
 
+  function ensureTransport() {
+    if (transportConnection && activeTransportUrl) {
+      return Promise.resolve(activeTransportUrl);
+    }
+    return configureTransport();
+  }
+
+  function isMusicDestination(destination) {
+    try {
+      const url = new URL(destination);
+      return url.hostname === "vcsa.huangqirui.xyz" && /^\/listen\/?$/i.test(url.pathname);
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function switchToPrimaryTransport() {
+    if (activeTransportUrl === PRIMARY_TRANSPORT_URL) {
+      return Promise.resolve(PRIMARY_TRANSPORT_URL);
+    }
+    if (transportPrimaryPromise) return transportPrimaryPromise;
+
+    transportPrimaryPromise = Promise.resolve()
+      .then(() => transportSetupPromise)
+      .catch(() => {})
+      .then(() => transportFallbackPromise)
+      .catch(() => {})
+      .then(() => {
+        if (!transportConnection) {
+          throw new Error("The web transport bridge is unavailable.");
+        }
+        return withTimeout(
+          transportConnection.setTransport(PRIMARY_TRANSPORT_URL, [
+            { wisp: WISP_RELAY },
+          ]),
+          8000,
+          "The music transport setup timed out.",
+        );
+      })
+      .then(async () => {
+        const selectedTransport = await withTimeout(
+          transportConnection.getTransport(),
+          4000,
+          "The music transport could not be verified.",
+        );
+        if (selectedTransport !== PRIMARY_TRANSPORT_URL) {
+          throw new Error("The music transport did not stay registered.");
+        }
+        activeTransportUrl = PRIMARY_TRANSPORT_URL;
+        await activateWorker().then((worker) => warmWorker(worker));
+        return PRIMARY_TRANSPORT_URL;
+      })
+      .finally(() => {
+        transportPrimaryPromise = null;
+      });
+    return transportPrimaryPromise;
+  }
+
+  async function ensureNavigationTransport(destination) {
+    const currentTransport = await ensureTransport();
+    if (!isMusicDestination(destination) || currentTransport !== PRIMARY_TRANSPORT_URL) {
+      return currentTransport;
+    }
+    return switchToFallbackTransport().catch(() => currentTransport);
+  }
+
   function switchToFallbackTransport() {
     if (transportFallbackPromise) return transportFallbackPromise;
 
@@ -289,6 +360,7 @@
           throw new Error("The fallback web transport did not stay registered.");
         }
         activeTransportUrl = FALLBACK_TRANSPORT_URL;
+        await activateWorker().then((worker) => warmWorker(worker));
         return FALLBACK_TRANSPORT_URL;
       })
       .finally(() => {
@@ -987,7 +1059,7 @@
       }
       tab.awaitingTransport = true;
       tab.frame.src = "about:blank";
-      configureTransport().then(
+      ensureNavigationTransport(tab.destination).then(
         () => {
           if (!tabs.includes(tab) || tab.navigationId !== navigationId) return;
           tab.awaitingTransport = false;
@@ -1123,6 +1195,9 @@
         if (tab.awaitingTransport) return;
         if (await recoverMissingTransport(tab)) return;
         tab.transportRecoveryAttempts = 0;
+        if (isMusicDestination(tab.destination)) {
+          await switchToPrimaryTransport().catch(() => {});
+        }
         wireNewTabFrame(tab);
         applyAppTheme(tab);
         refreshAddress(tab);

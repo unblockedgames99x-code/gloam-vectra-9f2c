@@ -943,6 +943,7 @@
           set(value) {
             const isAudio = this instanceof HTMLAudioElement;
             if (isAudio) {
+              window.__neoMusicAudio = this;
               this.preload = "auto";
               audioTrackResetVersion.set(this, (audioTrackResetVersion.get(this) || 0) + 1);
               pendingAudioTrackReset.add(this);
@@ -994,6 +995,7 @@
       observeMediaElement(this);
       activeMediaElement = this;
       if (this instanceof HTMLAudioElement) {
+        window.__neoMusicAudio = this;
         this.preload = "auto";
         resetNewAudioTrack(this);
         const source = this.currentSrc || sourceAttribute(this, "src");

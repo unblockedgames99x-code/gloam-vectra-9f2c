@@ -35,20 +35,20 @@
       (function () {
         window.__neoProxyRecovery = Promise.resolve();
         if (!("serviceWorker" in navigator)) return;
-        var expectedEngine = "neo-browse-v57";
+        var expectedEngine = "neo-browse-v65";
         var recoveryKey = "neo_proxy_scope_recovered_" + expectedEngine;
-        var expectedScope = new URL("./browse/", window.location.href).href;
-        var expectedWorkerPath = new URL("./browser-sw.js", window.location.href).pathname;
+        var expectedScope = new URL("./browse-v65/", document.baseURI).href;
+        var expectedWorkerPath = new URL("./browser-sw.js", document.baseURI).pathname;
         window.__neoProxyRecovery = navigator.serviceWorker.getRegistrations().then(function (registrations) {
           var stale = registrations.filter(function (registration) {
-            var worker = registration.active || registration.waiting || registration.installing;
-            var scriptUrl = worker ? worker.scriptURL : "";
-            try {
-              if (new URL(scriptUrl).pathname !== expectedWorkerPath) return false;
-            } catch (error) { return false; }
-            var workerEngine = "";
-            try { workerEngine = new URL(scriptUrl).searchParams.get("engine") || ""; } catch (error) {}
-            return registration.scope !== expectedScope || workerEngine !== expectedEngine;
+            var workers = [registration.active, registration.waiting, registration.installing].filter(Boolean);
+            if (!workers.some(function (worker) {
+              try { return new URL(worker.scriptURL).pathname === expectedWorkerPath; } catch (error) { return false; }
+            })) return false;
+            if (registration.scope !== expectedScope) return true;
+            return !workers.some(function (worker) {
+              try { return new URL(worker.scriptURL).searchParams.get("engine") === expectedEngine; } catch (error) { return false; }
+            });
           });
           if (!stale.length) {
             sessionStorage.removeItem(recoveryKey);

@@ -1,11 +1,10 @@
 (function () {
   "use strict";
 
-  // The launcher uses an HTTPS CDN base rather than a local file. Resolve the
-  // catalog and included games from the same published repository.
+  // Keep the full NEO build on the same jsDelivr revision when it is fetched
+  // into a code runner or about:blank document.
   var NEO_APP_BASE = new URL("./", document.baseURI);
   var NEO_CDN_BASE = String(window.__NEO_CDN_BASE || new URL("../", NEO_APP_BASE).href);
-  var NEO_GAME_ORIGIN = String(window.__NEO_GAME_ORIGIN || new URL("../", NEO_APP_BASE).href).replace(/\/+$/, "");
 
   var SETTINGS_KEY = "neo_os_settings_v1";
   var WIDGET_LAYOUT_KEY = "neo_os_widget_layout_v1";
@@ -1266,7 +1265,7 @@
       var existing = document.getElementById("neo-browse-runtime-script");
       var script = existing || document.createElement("script");
       script.id = "neo-browse-runtime-script";
-      script.src = "./neo-browser-runtime.js?v=20260825-music-transport-v6";
+      script.src = "./neo-browser-runtime.js?v=20260825-music-transport-v17";
       script.async = true;
       script.onload = function () {
         if (!window.NEO_BROWSER_ENGINE) {
@@ -1287,6 +1286,7 @@
   }
 
   function scheduleBrowsePrewarm() {
+    if (document.querySelector('meta[name="neo-runner"]')?.content === "1") return;
     if (!("serviceWorker" in navigator) || navigator.onLine === false) return;
     var connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
     if (connection && (connection.saveData || /(^|-)2g$/.test(connection.effectiveType || ""))) return;
@@ -2893,7 +2893,7 @@
   function loadCatalog() {
     if (catalog) return Promise.resolve(catalog);
     if (catalogPromise) return catalogPromise;
-    catalogPromise = fetch(NEO_CDN_BASE + "games/index.json", { credentials: "omit", cache: "force-cache" })
+    catalogPromise = fetch(new URL("games/index.json", NEO_CDN_BASE).href, { credentials: "omit", cache: "force-cache" })
       .then(function (response) {
         if (!response.ok) throw new Error("Catalog request failed");
         return response.json();
@@ -2919,7 +2919,7 @@
   function loadCoverManifest() {
     if (coverManifestLoaded) return Promise.resolve(coverManifest);
     if (coverManifestPromise) return coverManifestPromise;
-    coverManifestPromise = fetch(NEO_CDN_BASE + "games/covers.json?v=20260802-neo-v2", { credentials: "omit", cache: "force-cache" })
+    coverManifestPromise = fetch(new URL("games/covers.json?v=20260802-neo-v2", NEO_CDN_BASE).href, { credentials: "omit", cache: "force-cache" })
       .then(function (response) {
         if (!response.ok) throw new Error("Cover manifest request failed");
         return response.json();
@@ -3158,7 +3158,7 @@
     var safe = encodeURIComponent(slug);
     var candidates = [];
     var mapped = String(coverManifest[slug] || "").trim();
-    if (/^\/games\/captured-covers\//i.test(mapped)) candidates.push(NEO_CDN_BASE.replace(/\/+$/, "") + mapped);
+    if (/^\/games\/captured-covers\//i.test(mapped)) candidates.push(new URL(mapped.replace(/^\/+/, ""), NEO_CDN_BASE).href);
     else if (/^https:\/\//i.test(mapped)) candidates.push(mapped);
     [
       "/games/captured-covers/" + safe + "-cover.webp",
@@ -3169,7 +3169,7 @@
       "/games/captured-covers/" + safe + ".jpeg",
       "/games/captured-covers/" + safe + ".png"
     ].forEach(function (candidate) {
-      candidate = NEO_CDN_BASE.replace(/\/+$/, "") + candidate;
+      candidate = new URL(candidate.replace(/^\/+/, ""), NEO_CDN_BASE).href;
       if (candidates.indexOf(candidate) === -1) candidates.push(candidate);
     });
     return candidates;
@@ -3212,13 +3212,11 @@
       })
       .then(function (html) {
         if (tab.closed) return;
-        if (!/<base\s/i.test(html)) {
-          var sourceBase = new URL("./", route).href;
-          var baseTag = '<base href="' + sourceBase.replace(/&/g, "&amp;").replace(/"/g, "&quot;") + '">';
-          html = /<head(?:\s[^>]*)?>/i.test(html)
-            ? html.replace(/<head(?:\s[^>]*)?>/i, function (head) { return head + baseTag; })
-            : baseTag + html;
-        }
+        var sourceBase = new URL("./", route).href;
+        var baseTag = '<base href="' + sourceBase.replace(/&/g, "&amp;").replace(/"/g, "&quot;") + '">';
+        html = /<head(?:\s[^>]*)?>/i.test(html)
+          ? html.replace(/<head(?:\s[^>]*)?>/i, function (head) { return head + baseTag; })
+          : baseTag + html;
         tab.document.open();
         tab.document.write(html);
         tab.document.close();
@@ -3231,7 +3229,7 @@
   function localGameRoute(entry) {
     var file = String(entry && entry.file || "").replace(/\\/g, "/");
     if (!/^games\/[A-Za-z0-9._()\[\] -]+\.html$/.test(file)) return "";
-    return NEO_GAME_ORIGIN + "/" + file.split("/").map(encodeURIComponent).join("/");
+    return new URL(file.split("/").map(encodeURIComponent).join("/"), NEO_CDN_BASE).href;
   }
 
   function openWallpaperDatabase() {
