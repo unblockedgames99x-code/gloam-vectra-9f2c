@@ -92,7 +92,7 @@
 
       function prepareDocument(html, source) {
         const sourceBase = new URL("./", source).href;
-        const baseTag = `<base href="${htmlEscape(sourceBase)}">`;
+        const baseTag = `<base href="${htmlEscape(sourceBase)}"><meta name="neo-runner" content="1">`;
         if (/<head(?:\s[^>]*)?>/i.test(html)) {
           return html.replace(/<head(?:\s[^>]*)?>/i, (head) => head + baseTag);
         }

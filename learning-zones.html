@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#ff6a00" />
+    <meta name="description" content="A private interactive zone library for approved members." />
+    <script>
+      (function () {
+        var path = location.pathname.replace(/\/+$/, "") || "/";
+        document.documentElement.classList.toggle("lz-home-route", path === "/");
+      })();
+    </script>
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <link href="/static/css/main.7826fce8.css" rel="stylesheet" />
+    <link href="/chromebook-optimizations.css" rel="stylesheet" />
+    <link href="/premium-polish.css?v=20260724-savefeedback2" rel="stylesheet" />
+    <title>Learning Zones</title>
+    <script>
+      (function () {
+        try {
+          var path = location.pathname.replace(/\/+$/, "") || "/";
+          if (path === "/" && localStorage.getItem("ugp_token")) {
+            var preload = document.createElement("link");
+            preload.rel = "preload";
+            preload.as = "fetch";
+            preload.href = "/games/index.json";
+            preload.crossOrigin = "anonymous";
+            document.head.appendChild(preload);
+          }
+        } catch (error) {}
+      })();
+    </script>
+    <script>
+      (function () {
+        if (window.learningZonesSaveCommit) return;
+        window.learningZonesSaveCommit = function (url, init) {
+          init = init || {};
+          if (typeof Worker !== "function" || typeof Blob !== "function" || !window.URL || !URL.createObjectURL) {
+            return fetch(url, init);
+          }
+          var code = "self.onmessage=async function(event){try{var response=await fetch(event.data.url,event.data.init||{});self.postMessage({ok:response.ok,status:response.status,statusText:response.statusText});}catch(error){self.postMessage({ok:false,status:0,statusText:String(error&&error.message||error)});}};";
+          var blobUrl = URL.createObjectURL(new Blob([code], { type: "text/javascript" }));
+          return new Promise(function (resolve, reject) {
+            var worker = new Worker(blobUrl);
+            var timer = setTimeout(function () {
+              worker.terminate();
+              URL.revokeObjectURL(blobUrl);
+              reject(new Error("save_timeout"));
+            }, 10000);
+            worker.onmessage = function (event) {
+              clearTimeout(timer);
+              worker.terminate();
+              URL.revokeObjectURL(blobUrl);
+              var result = event.data || {};
+              if (result.ok) resolve(result);
+              else reject(new Error(result.statusText || "Could not update saved zones."));
+            };
+            worker.onerror = function (error) {
+              clearTimeout(timer);
+              worker.terminate();
+              URL.revokeObjectURL(blobUrl);
+              reject(error instanceof Error ? error : new Error("save_worker_error"));
+            };
+            worker.postMessage({ url: url, init: init });
+          });
+        };
+      })();
+    </script>
+    <script defer src="/midnight-arcade-bg.js?v=20260719-bg-sync1"></script>
+    <script src="/owner-page-save-bridge.js?v=20260723-save2"></script>
+    <script defer src="/login-credential-handoff.js?v=20260815-login2"></script>
+    <script defer src="/route-recovery.js?v=20260815-routefix2"></script>
+    <script defer src="/static/js/main.9ee8cc75.js"></script>
+    <script>
+      (function () {
+        function loadScript(src) {
+          var script = document.createElement("script");
+          script.src = src;
+          script.async = true;
+          document.head.appendChild(script);
+        }
+
+        function loadHelpers() {
+          if (window.__learningZonesHelpersLoaded) return;
+          window.__learningZonesHelpersLoaded = true;
+          loadScript("/chat-site-sync.js?v=20260724-savefeedback2");
+          loadScript("/report-bug-link.js?v=20260723-page3");
+        }
+        window.learningZonesLoadHelpers = loadHelpers;
+
+        function scheduleHelpers() {
+          var path = location.pathname.replace(/\/+$/, "") || "/";
+          if (path === "/login") return;
+          var isInteractionCritical =
+            path === "/chat" ||
+            path === "/settings" ||
+            path === "/report-a-bug" ||
+            path === "/report-bug";
+          var delay = isInteractionCritical ? 40 : 320;
+          setTimeout(loadHelpers, delay);
+        }
+
+        var currentPath = location.pathname.replace(/\/+$/, "") || "/";
+        var needsEarlyHelpers =
+          currentPath === "/chat" ||
+          currentPath === "/settings" ||
+          currentPath === "/report-a-bug" ||
+          currentPath === "/report-bug";
+        if (document.readyState === "complete" || (needsEarlyHelpers && document.readyState !== "loading")) {
+          scheduleHelpers();
+        } else if (needsEarlyHelpers) {
+          document.addEventListener("DOMContentLoaded", scheduleHelpers, { once: true });
+        } else {
+          window.addEventListener("load", scheduleHelpers, { once: true });
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+  </body>
+</html>

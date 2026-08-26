@@ -1,6 +1,6 @@
 /* global Ultraviolet */
 (() => {
-  const engineVersion = "neo-browse-v55";
+  const engineVersion = "neo-browse-v57";
   const appBase = (() => {
     if (self.registration?.scope) return new URL("../", self.registration.scope);
     if (typeof document !== "undefined" && document.currentScript?.src) {

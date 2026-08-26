@@ -1,8 +1,8 @@
-import "./browser-runtime/uv/uv.bundle.js?engine=neo-browse-v55";
-import "./browser-runtime/uv/uv.config.js?engine=neo-browse-v55";
+import "./browser-runtime/uv/uv.bundle.js?engine=neo-browse-v57";
+import "./browser-runtime/uv/uv.config.js?engine=neo-browse-v57";
 import "./browser-runtime/uv/uv.sw.js";
 
-const ENGINE_VERSION = "neo-browse-v55";
+const ENGINE_VERSION = "neo-browse-v57";
 const ultraviolet = new UVServiceWorker();
 const RETRYABLE_METHODS = new Set(["GET", "HEAD"]);
 const FALLBACK_TIMEOUT_MS = 8000;
@@ -139,6 +139,9 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("message", (event) => {
   if (event.data?.type !== "neo-browser:warm") return;
+  if (event.data.bareMuxPort instanceof MessagePort) {
+    ultraviolet.bareClient = new self.Ultraviolet.BareClient(event.data.bareMuxPort);
+  }
   event.ports[0]?.postMessage({ ok: true, engine: ENGINE_VERSION });
 });
 

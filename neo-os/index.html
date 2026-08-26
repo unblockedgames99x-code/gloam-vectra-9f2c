@@ -35,7 +35,7 @@
       (function () {
         window.__neoProxyRecovery = Promise.resolve();
         if (!("serviceWorker" in navigator)) return;
-        var expectedEngine = "neo-browse-v55";
+        var expectedEngine = "neo-browse-v57";
         var recoveryKey = "neo_proxy_scope_recovered_" + expectedEngine;
         var expectedScope = new URL("./browse/", window.location.href).href;
         var expectedWorkerPath = new URL("./browser-sw.js", window.location.href).pathname;

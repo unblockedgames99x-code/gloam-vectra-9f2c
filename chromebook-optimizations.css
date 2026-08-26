@@ -1,0 +1,133 @@
+/*
+  Chromebook performance layer.
+  This stays outside the bundled app so the core routes, Firebase logic,
+  chat overlay, and generated asset names remain untouched.
+*/
+
+.tile,
+[data-testid^="game-tile-"] {
+  contain: layout paint style;
+}
+
+@supports (content-visibility: auto) {
+  .tile,
+  [data-testid^="game-tile-"] {
+    content-visibility: auto;
+    contain-intrinsic-size: 260px 245px;
+  }
+}
+
+html[data-lz-chromebook="true"] {
+  text-rendering: optimizeSpeed;
+}
+
+html[data-lz-chromebook="true"] body {
+  overscroll-behavior-y: contain;
+}
+
+html[data-lz-chromebook="true"] #root {
+  isolation: isolate;
+}
+
+html[data-lz-chromebook="true"] #root [class~="min-h-[112px]"],
+html[data-lz-chromebook="true"] #root [class~="sm:min-h-[128px]"] {
+  contain: layout paint style;
+}
+
+@supports (content-visibility: auto) {
+  html[data-lz-chromebook="true"] #root [class~="min-h-[112px]"],
+  html[data-lz-chromebook="true"] #root [class~="sm:min-h-[128px]"] {
+    content-visibility: auto;
+    contain-intrinsic-size: 184px 116px;
+  }
+}
+
+html[data-lz-chromebook="true"] .lz-chat-overlay,
+html[data-lz-chromebook="true"] .lz-chat-panel,
+html[data-lz-chromebook="true"] .lz-chat-side-panel,
+html[data-lz-chromebook="true"] .lz-chat-left-panel {
+  contain: layout paint style;
+}
+
+html[data-lz-chromebook="true"] .shadow-2xl,
+html[data-lz-chromebook="true"] .shadow-xl,
+html[data-lz-chromebook="true"] .shadow-lg,
+html[data-lz-chromebook="true"] .shadow-md,
+html[data-lz-chromebook="true"] .shadow,
+html[data-lz-chromebook="true"] .shadow-sm {
+  box-shadow: 0 1px 3px rgba(71, 54, 40, 0.08) !important;
+}
+
+html[data-lz-chromebook="true"] [class*="backdrop-blur"] {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html[data-lz-chromebook="true"] [data-testid="site-header"],
+html[data-lz-chromebook="true"] .lz-chat-open-button,
+html[data-lz-chromebook="true"] .lz-chat-overlay-head,
+html[data-lz-chromebook="true"] .lz-zone-rating.is-page,
+html[data-lz-chromebook="true"] .lz-site-profile-scrim {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html[data-lz-chromebook="true"] [class*="blur-"],
+html[data-lz-chromebook="true"] .blur {
+  filter: none !important;
+}
+
+html[data-lz-chromebook="true"] .animate-pulse,
+html[data-lz-chromebook="true"] .animate-spin,
+html[data-lz-chromebook="true"] [class*="animate-in"],
+html[data-lz-chromebook="true"] [class*="animate-out"] {
+  animation-duration: 0.08s !important;
+  animation-iteration-count: 1 !important;
+}
+
+html[data-lz-chromebook="true"] * {
+  scroll-behavior: auto !important;
+}
+
+html[data-lz-chromebook="true"] [class*="duration-"],
+html[data-lz-chromebook="true"] [class*="transition"] {
+  transition-duration: 0.08s !important;
+}
+
+@media (min-width: 1024px) and (max-width: 1400px) {
+  html[data-lz-chromebook="true"] #root .max-w-7xl {
+    max-width: 72rem;
+  }
+
+  html[data-lz-chromebook="true"] #root .py-20 {
+    padding-top: 3.5rem;
+    padding-bottom: 3.5rem;
+  }
+
+  html[data-lz-chromebook="true"] #root .mt-24 {
+    margin-top: 4rem;
+  }
+
+  html[data-lz-chromebook="true"] #root [class~="min-h-[112px]"] {
+    min-height: 104px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+  }
+
+  .animate-pulse,
+  .animate-spin,
+  [class*="animate-in"],
+  [class*="animate-out"] {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  [class*="duration-"],
+  [class*="transition"] {
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,6 @@
+.backups/
+backups/
+artifacts/
+neo-desktop/
+scripts/
+.neo-preview*.log

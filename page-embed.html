@@ -1,0 +1,161 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Page</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        font-family: system-ui, sans-serif;
+        background: #fff7f0;
+        color: #5c534d;
+      }
+
+      .wrap {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        text-align: center;
+      }
+
+      h1 {
+        color: #ff6a00;
+        margin: 0 0 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div>
+        <h1>Loading...</h1>
+        <p>Opening page content.</p>
+      </div>
+    </div>
+    <script>
+      (async function () {
+        const DB = "https://taco-chat-c1539-default-rtdb.firebaseio.com";
+        const ROOT = "rooms/_deluxeAppState/state";
+        const NS = "ultimateGameStash";
+        const files = {
+          chat: "chat_html.html",
+          community: "community_html.html",
+          gamemaker: "gamemaker_html.html",
+          party: "party_html.html"
+        };
+        const params = new URLSearchParams(location.search);
+        const page = files[params.get("page")] ? params.get("page") : "chat";
+        let html = "";
+
+        function injectChatAccountBridge(source) {
+          if (page !== "chat" || source.includes("__learningZonesChatAccountBridge")) return source;
+          const marker = "\n  initGameDiscoveryFromUrl();";
+          if (!source.includes(marker)) return source;
+          const bridge = `
+  window.__learningZonesChatAccountBridge = Object.freeze({
+    getState: () => state,
+    setState: value => { state = value; return state; },
+    getMe: () => me,
+    setMe: value => { me = String(value || ""); return me; },
+    getCurrentRoom: () => currentRoom,
+    clientId: CLIENT_ID,
+    databaseUrl: firebaseConfig.databaseURL,
+    browserId: BROWSER_ID,
+    browserFingerprintKey: BROWSER_FINGERPRINT_KEY,
+    passwordMinLength: PASSWORD_MIN_LENGTH,
+    element: $,
+    stopPresenceTimer,
+    loginError,
+    isOwnerName,
+    currentBrowserIds,
+    currentBrowserFingerprints,
+    constantTimeEqual,
+    verifyAccountPassword,
+    securePasswordHashingAvailable,
+    setAccountPassword,
+    createPasswordHashRecord,
+    fetchAccountForLogin,
+    normalize,
+    activeBrowserBan,
+    activeAccountBan,
+    linkAccountToBrowser,
+    banMessage,
+    touchAccount,
+    save,
+    forceCloudSaveNow,
+    render,
+    normalizeProfileFields,
+    openApp,
+    account,
+    installLinkedLogin: handler => {
+      if (typeof handler === "function") acceptLinkedSiteLogin = handler;
+    }
+  });
+`;
+          return source.replace(marker, `${bridge}${marker}`);
+        }
+
+        function injectAppearanceSync(source) {
+          const scripts = [
+            '<script defer src="/learningzone-appearance-frame.js?v=20260719-bg-sync1"><\/script>',
+            page === "chat" ? '<script defer src="/chat-account-link-frame.js?v=20260724-typingavatars1"><\/script>' : ""
+          ].join("");
+          if (/<\/head>/i.test(source)) return source.replace(/<\/head>/i, `${scripts}</head>`);
+          return `${scripts}${source}`;
+        }
+
+        async function fetchWithTimeout(url, options, timeoutMs) {
+          const controller = typeof AbortController === "function" ? new AbortController() : null;
+          let timeoutId = 0;
+          const timeout = new Promise((resolve, reject) => {
+            timeoutId = setTimeout(() => {
+              if (controller) controller.abort();
+              reject(new Error("Page request timed out"));
+            }, timeoutMs);
+          });
+
+          try {
+            return await Promise.race([
+              fetch(url, Object.assign({}, options, controller ? { signal: controller.signal } : {})),
+              timeout
+            ]);
+          } finally {
+            clearTimeout(timeoutId);
+          }
+        }
+
+        const fallbackHtmlPromise = fetch(`/pages/${files[page]}`, { cache: "no-store" })
+          .then(response => response.ok ? response.text() : "")
+          .catch(() => "");
+
+        try {
+          const remote = await fetchWithTimeout(
+            `${DB}/${ROOT}/${NS}/pages/${encodeURIComponent(page)}.json`,
+            { cache: "no-store" },
+            1200
+          );
+          const value = remote.ok ? await remote.json() : null;
+          html = typeof value === "string" ? value : value && value.html ? value.html : "";
+        } catch (error) {
+          html = "";
+        }
+
+        if (!html.trim()) {
+          html = await fallbackHtmlPromise;
+        }
+
+        if (!html.trim()) {
+          html =
+            "<!doctype html><html><body><h1>Page unavailable</h1><p>The owner can add this page from the Owner panel.</p></body></html>";
+        }
+
+        document.open();
+        document.write(injectAppearanceSync(injectChatAccountBridge(html)));
+        document.close();
+      })();
+    </script>
+  </body>
+</html>

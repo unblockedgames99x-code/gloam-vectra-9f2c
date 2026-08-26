@@ -1,9 +1,8 @@
 (function () {
   "use strict";
 
-  // A launcher may provide its own base, but the published build also figures
-  // this out from its own URL. That keeps the catalog working from jsDelivr
-  // instead of relying on a local file or the original site origin.
+  // The launcher uses an HTTPS CDN base rather than a local file. Resolve the
+  // catalog and included games from the same published repository.
   var NEO_APP_BASE = new URL("./", document.baseURI);
   var NEO_CDN_BASE = String(window.__NEO_CDN_BASE || new URL("../", NEO_APP_BASE).href);
   var NEO_GAME_ORIGIN = String(window.__NEO_GAME_ORIGIN || new URL("../", NEO_APP_BASE).href).replace(/\/+$/, "");
@@ -1267,7 +1266,7 @@
       var existing = document.getElementById("neo-browse-runtime-script");
       var script = existing || document.createElement("script");
       script.id = "neo-browse-runtime-script";
-      script.src = "./neo-browser-runtime.js?v=20260825-music-transport-v4";
+      script.src = "./neo-browser-runtime.js?v=20260825-music-transport-v6";
       script.async = true;
       script.onload = function () {
         if (!window.NEO_BROWSER_ENGINE) {
@@ -1430,6 +1429,7 @@
     var appMode = app.browserChrome === false;
     var appTheme = app.browserTheme || "";
     var directOrigin = app.browserDirect === true;
+    var runnerMode = document.querySelector('meta[name="neo-runner"]')?.content === "1";
     browser.classList.toggle("is-dedicated-app", appMode);
 
     var form = browser.querySelector("[data-browser-search-form]");
@@ -1480,6 +1480,13 @@
       });
     }
 
+    function openRunnerTab(target) {
+      var tab = window.open(target, "_blank");
+      if (!tab) return false;
+      try { tab.opener = null; } catch (error) {}
+      return true;
+    }
+
     function openTarget(targetHref, label) {
       var target;
       try { target = new URL(targetHref); } catch (error) { return; }
@@ -1487,6 +1494,19 @@
       currentQuery = label || target.hostname;
       currentTarget = target.href;
       input.value = currentQuery;
+      if (runnerMode) {
+        stopRequest();
+        content.textContent = "";
+        if (openRunnerTab(target.href)) {
+          retry.textContent = "Retry";
+          setBrowserState("home");
+          showToast("Opened in a new tab", "Browse and search open normally from this code runner.", "external");
+        } else {
+          retry.textContent = "Open website";
+          setBrowserState("error", "Your browser blocked the new tab. Select Open website to try again.");
+        }
+        return;
+      }
       stopRequest();
       content.textContent = "";
       setBrowserState("loading");
@@ -1511,6 +1531,16 @@
     }
 
     function openNewTabShell(addSecondTab) {
+      if (runnerMode) {
+        currentQuery = "";
+        currentTarget = "";
+        input.value = "";
+        stopRequest();
+        content.textContent = "";
+        setBrowserState("home");
+        input.focus({ preventScroll: true });
+        return;
+      }
       currentQuery = "";
       currentTarget = "";
       input.value = "";
@@ -1618,9 +1648,11 @@
       if (detail.target) openTarget(detail.target, detail.label || "Web page");
     });
     if (hostWindow) hostWindow._neoBrowserCleanup = stopRequest;
-    var warmBrowse = function () { prepareBrowserEngine().catch(function () {}); };
-    if ("requestIdleCallback" in window) window.requestIdleCallback(warmBrowse, { timeout: 900 });
-    else window.setTimeout(warmBrowse, 120);
+    if (!runnerMode) {
+      var warmBrowse = function () { prepareBrowserEngine().catch(function () {}); };
+      if ("requestIdleCallback" in window) window.requestIdleCallback(warmBrowse, { timeout: 900 });
+      else window.setTimeout(warmBrowse, 120);
+    }
     requestAnimationFrame(function () {
       if (initialTarget) openTarget(initialTarget, initialLabel || "Web app");
       else input.focus({ preventScroll: true });
@@ -2861,7 +2893,7 @@
   function loadCatalog() {
     if (catalog) return Promise.resolve(catalog);
     if (catalogPromise) return catalogPromise;
-    catalogPromise = fetch((NEO_CDN_BASE || "/") + "games/index.json", { credentials: "omit", cache: "force-cache" })
+    catalogPromise = fetch(NEO_CDN_BASE + "games/index.json", { credentials: "omit", cache: "force-cache" })
       .then(function (response) {
         if (!response.ok) throw new Error("Catalog request failed");
         return response.json();
@@ -2887,7 +2919,7 @@
   function loadCoverManifest() {
     if (coverManifestLoaded) return Promise.resolve(coverManifest);
     if (coverManifestPromise) return coverManifestPromise;
-    coverManifestPromise = fetch((NEO_CDN_BASE || "/") + "games/covers.json?v=20260802-neo-v2", { credentials: "omit", cache: "force-cache" })
+    coverManifestPromise = fetch(NEO_CDN_BASE + "games/covers.json?v=20260802-neo-v2", { credentials: "omit", cache: "force-cache" })
       .then(function (response) {
         if (!response.ok) throw new Error("Cover manifest request failed");
         return response.json();
@@ -3128,7 +3160,6 @@
     var mapped = String(coverManifest[slug] || "").trim();
     if (/^\/games\/captured-covers\//i.test(mapped)) candidates.push(NEO_CDN_BASE.replace(/\/+$/, "") + mapped);
     else if (/^https:\/\//i.test(mapped)) candidates.push(mapped);
-    if (!candidates.length) return [new URL("./assets/neo-logo.svg", NEO_APP_BASE).href];
     [
       "/games/captured-covers/" + safe + "-cover.webp",
       "/games/captured-covers/" + safe + "-illustrated.webp",
@@ -3166,8 +3197,6 @@
       showToast("Game unavailable", "This catalog entry does not point to a local HTML game file.", "info");
       return;
     }
-    // jsDelivr safely serves repository HTML as text. Load the game over HTTPS
-    // and write it into a new about:blank document so its JavaScript can run.
     var tab = window.open("about:blank", "_blank");
     if (!tab) {
       showToast("Pop-up blocked", "Allow pop-ups to launch this game.", "info");
@@ -3183,18 +3212,19 @@
       })
       .then(function (html) {
         if (tab.closed) return;
-        var sourceBase = new URL("./", route).href;
-        var baseTag = '<base href="' + sourceBase.replace(/&/g, "&amp;").replace(/"/g, "&quot;") + '">';
-        var documentHtml = /<head(?:\s[^>]*)?>/i.test(html)
-          ? html.replace(/<head(?:\s[^>]*)?>/i, function (head) { return head + baseTag; })
-          : baseTag + html;
+        if (!/<base\s/i.test(html)) {
+          var sourceBase = new URL("./", route).href;
+          var baseTag = '<base href="' + sourceBase.replace(/&/g, "&amp;").replace(/"/g, "&quot;") + '">';
+          html = /<head(?:\s[^>]*)?>/i.test(html)
+            ? html.replace(/<head(?:\s[^>]*)?>/i, function (head) { return head + baseTag; })
+            : baseTag + html;
+        }
         tab.document.open();
-        tab.document.write(documentHtml);
+        tab.document.write(html);
         tab.document.close();
       })
       .catch(function () {
-        if (tab.closed) return;
-        tab.document.body.textContent = "This game could not load.";
+        if (!tab.closed) tab.document.body.textContent = "This game could not load.";
       });
   }
 

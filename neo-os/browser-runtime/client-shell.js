@@ -118,7 +118,8 @@
     const relation = String(node.rel || "").toLowerCase();
     if (relation !== "modulepreload" && relation !== "stylesheet") return;
 
-    const routePrefix = window.__uv$config?.prefix || "/neo-os/browse/";
+    const routePrefix = window.__uv$config?.prefix || "";
+    if (!routePrefix) return;
     let routedUrl;
     try {
       routedUrl = new URL(node.getAttribute("href") || node.href, window.location.href);

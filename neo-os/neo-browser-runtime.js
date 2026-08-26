@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const ENGINE_VERSION = "neo-browse-v55";
+  const ENGINE_VERSION = "neo-browse-v57";
   const APP_BASE = new URL("./", document.baseURI);
   const OS_SCOPE = APP_BASE.pathname;
   const ROUTE_PREFIX = new URL("./browse/", APP_BASE).pathname;
@@ -14,7 +14,7 @@
   const BAREMUX_WORKER_URL = `${RUNTIME_ROOT}/baremux/worker.js?engine=${ENGINE_VERSION}`;
   const PRIMARY_TRANSPORT_URL = `${RUNTIME_ROOT}/epoxy/index.mjs?engine=${ENGINE_VERSION}`;
   const FALLBACK_TRANSPORT_URL = `${RUNTIME_ROOT}/libcurl/index.mjs?engine=${ENGINE_VERSION}`;
-  const WISP_RELAY = "wss://wisp.mercurywork.shop/";
+  const WISP_RELAY = "wss://mages.io/wisp/";
   let runtimePromise = null;
   let stylesPromise = null;
   let transportConnection = null;
@@ -177,6 +177,12 @@
 
   async function warmWorker(worker) {
     const channel = new MessageChannel();
+    let bareMuxPort = null;
+    try {
+      bareMuxPort = new SharedWorker(BAREMUX_WORKER_URL, "bare-mux-worker").port;
+    } catch (error) {
+      // Older browsers can still use BareMux's client-discovery fallback.
+    }
     const warmed = new Promise((resolve, reject) => {
       channel.port1.onmessage = (event) => {
         if (event.data?.ok && event.data.engine === ENGINE_VERSION) resolve();
@@ -187,7 +193,13 @@
         reject(new Error("The web app did not receive a startup response."));
       };
     });
-    worker.postMessage({ type: "neo-browser:warm" }, [channel.port2]);
+    const message = { type: "neo-browser:warm" };
+    const transfer = [channel.port2];
+    if (bareMuxPort) {
+      message.bareMuxPort = bareMuxPort;
+      transfer.push(bareMuxPort);
+    }
+    worker.postMessage(message, transfer);
     await withTimeout(warmed, 15000, "The web app could not reach its relay.");
   }
 
@@ -210,7 +222,7 @@
       4000,
       "The web app could not inspect its transport.",
     ).catch(() => "");
-    if (candidates.includes(activeTransport)) {
+    if (candidates.includes(activeTransport) && activeTransportUrl === activeTransport) {
       activeTransportUrl = activeTransport;
       return activeTransport;
     }
@@ -334,7 +346,7 @@
 
   function getRuntime() {
     if (!PROXY_CAN_USE_CURRENT_ORIGIN) {
-      return Promise.reject(new Error("The NEO browser needs a direct HTTPS host and is unavailable inside this code-runner launcher."));
+      return Promise.reject(new Error("The NEO browser needs a direct HTTPS host."));
     }
     runtimePromise ||= withTimeout(
       createRuntime(),
