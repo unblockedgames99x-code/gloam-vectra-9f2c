@@ -80,34 +80,41 @@
       const status = document.getElementById("status");
       const blankButton = document.getElementById("about-blank");
       const fullscreenButton = document.getElementById("fullscreen");
-      let sourceUrl = urls[0];
-      let frameReady = false;
+      let sourceUrl = "";
+      let appHtml = "";
 
-      async function sourceIsAvailable(url) {
+      function htmlEscape(value) {
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/"/g, "&quot;")
+          .replace(/</g, "&lt;");
+      }
+
+      function prepareDocument(html, source) {
+        const sourceBase = new URL("./", source).href;
+        const baseTag = `<base href="${htmlEscape(sourceBase)}">`;
+        if (/<head(?:\s[^>]*)?>/i.test(html)) {
+          return html.replace(/<head(?:\s[^>]*)?>/i, (head) => head + baseTag);
+        }
+        return baseTag + html;
+      }
+
+      async function fetchDocument(url) {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 5500);
+        const timeout = setTimeout(() => controller.abort(), 10000);
         try {
-          const response = await fetch(url, {
-            method: "HEAD",
+          const response = await fetch(`${url}?v=${Date.now()}`, {
             cache: "no-store",
             mode: "cors",
             signal: controller.signal
           });
-          return response.ok;
-        } catch (error) {
-          return false;
+          if (!response.ok) throw new Error("Source request failed");
+          const html = await response.text();
+          if (!/<html[\s>]/i.test(html)) throw new Error("Source did not return HTML");
+          return prepareDocument(html, url);
         } finally {
           clearTimeout(timeout);
         }
-      }
-
-      async function chooseSource() {
-        const results = await Promise.all(urls.map(async (url) => ({ url, available: await sourceIsAvailable(url) })));
-        return results.find((result) => result.available)?.url || urls[0];
-      }
-
-      function htmlEscape(value) {
-        return String(value).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
       }
 
       async function enterFullscreen(target = document.documentElement) {
@@ -121,23 +128,19 @@
       }
 
       async function openInAboutBlank() {
-        // This stays an about:blank tab, while NEO itself loads from HTTPS/CDN.
         const tab = window.open("about:blank", "_blank");
         if (!tab) {
           status.textContent = "Allow pop-ups, then try again.";
           return;
         }
-        const safeUrl = htmlEscape(sourceUrl);
         tab.document.open();
-        tab.document.write(
-          "<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1,viewport-fit=cover\"><title>NEO OS</title><style>html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#07090d}iframe{display:block;width:100%;height:100%;border:0;background:#07090d}</style></head><body><iframe title=\"NEO OS\" allow=\"autoplay; clipboard-read; clipboard-write; fullscreen; gamepad\" allowfullscreen src=\"" + safeUrl + "\"></iframe></body></html>"
-        );
+        tab.document.write(appHtml);
         tab.document.close();
         tab.focus();
         try {
           await tab.document.documentElement.requestFullscreen({ navigationUI: "hide" });
         } catch (error) {
-          // A browser may require another direct click before allowing a popup to go fullscreen.
+          // Some browsers require a second direct click before fullscreen is allowed.
         }
       }
 
@@ -152,21 +155,28 @@
       });
 
       frame.addEventListener("load", () => {
-        frameReady = true;
-        status.textContent = "NEO is ready";
+        if (appHtml) status.textContent = "NEO is ready";
       });
 
-      (async () => {
-        frame.src = sourceUrl;
-        blankButton.disabled = false;
-        fullscreenButton.disabled = false;
-        const selectedUrl = await chooseSource();
-        if (!frameReady && selectedUrl !== sourceUrl) {
-          sourceUrl = selectedUrl;
-          status.textContent = "Trying another jsDelivr source…";
-          frame.src = sourceUrl;
+      async function load() {
+        for (const url of urls) {
+          try {
+            status.textContent = "Loading NEO…";
+            const html = await fetchDocument(url);
+            sourceUrl = url;
+            appHtml = html;
+            frame.srcdoc = appHtml;
+            blankButton.disabled = false;
+            fullscreenButton.disabled = false;
+            return;
+          } catch (error) {
+            // Try the next public jsDelivr source.
+          }
         }
-      })();
+        status.textContent = "NEO could not load from this runner.";
+      }
+
+      load();
     </script>
   </body>
 </html>

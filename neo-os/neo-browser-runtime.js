@@ -10,6 +10,7 @@
   const NEW_TAB_PAGE = new URL(`./browser-newtab.html?v=${ENGINE_VERSION}`, APP_BASE).href;
   const WORKER_URL = new URL(`./browser-sw.js?engine=${ENGINE_VERSION}`, APP_BASE).href;
   const DUCKDUCKGO_ICON = new URL("./assets/duckduckgo.png", APP_BASE).href;
+  const PROXY_CAN_USE_CURRENT_ORIGIN = APP_BASE.origin === window.location.origin;
   const BAREMUX_WORKER_URL = `${RUNTIME_ROOT}/baremux/worker.js?engine=${ENGINE_VERSION}`;
   const PRIMARY_TRANSPORT_URL = `${RUNTIME_ROOT}/epoxy/index.mjs?engine=${ENGINE_VERSION}`;
   const FALLBACK_TRANSPORT_URL = `${RUNTIME_ROOT}/libcurl/index.mjs?engine=${ENGINE_VERSION}`;
@@ -332,6 +333,9 @@
   }
 
   function getRuntime() {
+    if (!PROXY_CAN_USE_CURRENT_ORIGIN) {
+      return Promise.reject(new Error("The NEO browser needs a direct HTTPS host and is unavailable inside this code-runner launcher."));
+    }
     runtimePromise ||= withTimeout(
       createRuntime(),
       40000,

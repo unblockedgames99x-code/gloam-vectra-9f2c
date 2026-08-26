@@ -3166,8 +3166,36 @@
       showToast("Game unavailable", "This catalog entry does not point to a local HTML game file.", "info");
       return;
     }
-    // Open included game files directly from the same HTTPS/jsDelivr package.
-    window.open(route, "_blank", "noopener,noreferrer");
+    // jsDelivr safely serves repository HTML as text. Load the game over HTTPS
+    // and write it into a new about:blank document so its JavaScript can run.
+    var tab = window.open("about:blank", "_blank");
+    if (!tab) {
+      showToast("Pop-up blocked", "Allow pop-ups to launch this game.", "info");
+      return;
+    }
+    tab.document.open();
+    tab.document.write("<!doctype html><title>Loading game…</title><style>html,body{height:100%;margin:0;background:#080a0d;color:#fff;font:16px system-ui;display:grid;place-items:center}</style>Loading game…");
+    tab.document.close();
+    fetch(route, { credentials: "omit", cache: "force-cache" })
+      .then(function (response) {
+        if (!response.ok) throw new Error("Game request failed");
+        return response.text();
+      })
+      .then(function (html) {
+        if (tab.closed) return;
+        var sourceBase = new URL("./", route).href;
+        var baseTag = '<base href="' + sourceBase.replace(/&/g, "&amp;").replace(/"/g, "&quot;") + '">';
+        var documentHtml = /<head(?:\s[^>]*)?>/i.test(html)
+          ? html.replace(/<head(?:\s[^>]*)?>/i, function (head) { return head + baseTag; })
+          : baseTag + html;
+        tab.document.open();
+        tab.document.write(documentHtml);
+        tab.document.close();
+      })
+      .catch(function () {
+        if (tab.closed) return;
+        tab.document.body.textContent = "This game could not load.";
+      });
   }
 
   function localGameRoute(entry) {
