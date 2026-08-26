@@ -11565,6 +11565,7 @@ body{--a:255,118,40;--l:rgba(var(--a),.14);--d:rgba(var(--a),.26)}body[data-them
     return {
       type:"legacy",
       key:slug,
+      file:String(row.file || `games/${slug}.html`).replace(/^\/+/, ""),
       label:name,
       icon:(name.match(/[a-z0-9]/i)?.[0] || "Z").toUpperCase(),
       category:"Browser Zone",
@@ -11899,17 +11900,40 @@ body{--a:255,118,40;--l:rgba(var(--a),.14);--d:rgba(var(--a),.26)}body[data-them
     }
   }
 
-  function openLegacyGameCard(card){
+  function legacyGameFileUrl(card){
+    const file = String(card?.file || `games/${card?.key || ""}.html`).replace(/^\/+/, "");
+    return new URL(file, document.baseURI).toString();
+  }
+
+  function prepareLegacyGameDocument(html, url){
+    const base = new URL("./", url).href;
+    const add = `<base href="${base}" target="_self"><script>addEventListener("pointerdown",()=>{if(!document.fullscreenElement)document.documentElement.requestFullscreen({navigationUI:"hide"}).catch(()=>{})},{once:true})<\/script>`;
+    return /<head(?:\s[^>]*)?>/i.test(html)
+      ? html.replace(/<head(?:\s[^>]*)?>/i, match => match + add)
+      : add + html;
+  }
+
+  async function openLegacyGameCard(card){
     if(!card) return toast("That zone is not available.");
     rememberGamePlayerRecent(card);
-    const appHost = window.location.hostname;
-    const launchOrigin = LEGACY_GAME_FILE_HOST;
-    const url = new URL(`/zone/${encodeURIComponent(card.key)}`, launchOrigin).toString();
+    const url = legacyGameFileUrl(card);
+    const tab = window.open("about:blank", "_blank");
+    if(!tab) return toast("Allow pop-ups, then open the game again.");
     toast(`Opening ${card.label}...`);
-    if(window.top && window.top !== window.self){
-      window.top.location.href = url;
-    }else{
-      window.location.href = url;
+    tab.document.open();
+    tab.document.write(`<!doctype html><title>Loading ${esc(card.label)}</title><style>html,body{height:100%;margin:0;background:#090b10;color:#fff;font:700 18px system-ui;display:grid;place-items:center}</style>Loading ${esc(card.label)}...`);
+    tab.document.close();
+    try{
+      const response = await fetch(url + (url.includes("?") ? "&" : "?") + "v=" + Date.now(), {cache:"no-store"});
+      if(!response.ok) throw new Error(`HTTP ${response.status}`);
+      const html = await response.text();
+      if(!/<html[\s>]/i.test(html)) throw new Error("The game file was not HTML.");
+      tab.document.open();
+      tab.document.write(prepareLegacyGameDocument(html, url));
+      tab.document.close();
+      tab.focus();
+    }catch(error){
+      tab.location.replace(new URL(`/zone/${encodeURIComponent(card.key)}`, LEGACY_GAME_FILE_HOST).toString());
     }
   }
 
